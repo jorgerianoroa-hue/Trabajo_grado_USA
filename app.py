@@ -28,52 +28,62 @@ MESES_ORDEN = [
 
 # ---------------------------------------------------------------------------
 # TOKENS DE DISEÑO
-# Dos acentos con significado fijo en todo el tablero: PETROL = métrica
-# principal (formal / promedio), OCRE = métrica de comparación (no formal /
-# mediana). El mismo par de colores se usa en ambos bloques para que el
-# lenguaje visual se aprenda una sola vez.
+# Fondo hueso con grid punteado fino (referencia: papel milimetrado /
+# estadística). Dos acentos con significado fijo en todo el tablero: PETROL =
+# métrica principal (formal / promedio), OCRE = métrica de comparación (no
+# formal / mediana).
 # ---------------------------------------------------------------------------
-BG_PAGE = "#F5F4F1"
-INK = "#1B1F1D"
-INK_MUTED = "#6B7570"
-HAIRLINE = "#D9D6CD"
+BG_PAGE = "#FAF8F2"
+INK = "#1C1A17"
+INK_MUTED = "#716B5E"
+HAIRLINE = "#DEDACD"
+GRID_DOT = "rgba(28, 26, 23, 0.14)"
 PETROL = "#1F3A5F"
 OCRE = "#C98A2C"
 
-FONT_DISPLAY = "Fraunces"
-FONT_BODY = "IBM Plex Sans"
+FONT_DISPLAY = "Space Grotesk"
+FONT_MONO = "IBM Plex Mono"
+FONT_BODY = "Inter"
 
 
 def inject_css():
     st.markdown(
         f"""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 
         html, body, [class*="css"] {{
             font-family: '{FONT_BODY}', sans-serif;
             color: {INK};
+        }}
+        .stApp {{
+            background-color: {BG_PAGE};
+            background-image: radial-gradient({GRID_DOT} 1px, transparent 1px);
+            background-size: 24px 24px;
         }}
         .block-container {{
             padding-top: 2.5rem;
             max-width: 1200px;
         }}
         h1, h2, h3 {{
-            font-family: '{FONT_BODY}', sans-serif;
+            font-family: '{FONT_DISPLAY}', sans-serif;
             font-weight: 600;
             letter-spacing: -0.01em;
         }}
-        .app-header {{
-            font-family: '{FONT_DISPLAY}', serif;
-            font-size: 2.4rem;
-            font-weight: 600;
-            line-height: 1.15;
-            margin-bottom: 0.2rem;
-        }}
-        .app-subhead {{
+        .app-eyebrow {{
+            font-family: '{FONT_MONO}', monospace;
+            font-size: 0.8rem;
             color: {INK_MUTED};
-            font-size: 0.95rem;
-            margin-bottom: 1.4rem;
+            letter-spacing: 0.02em;
+            margin-bottom: 0.3rem;
+        }}
+        .app-header {{
+            font-family: '{FONT_DISPLAY}', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1.08;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
         }}
         .app-rule {{
             border: none;
@@ -81,19 +91,22 @@ def inject_css():
             margin: 0 0 1.6rem 0;
         }}
         .kpi-value {{
-            font-family: '{FONT_DISPLAY}', serif;
-            font-size: 2.6rem;
+            font-family: '{FONT_MONO}', monospace;
+            font-size: 2.5rem;
             font-weight: 600;
             line-height: 1.1;
+            font-variant-numeric: tabular-nums;
         }}
         .kpi-label {{
+            font-family: '{FONT_BODY}', sans-serif;
             color: {INK_MUTED};
             font-size: 0.88rem;
-            margin-top: 0.15rem;
+            margin-top: 0.2rem;
         }}
         .kpi-petrol {{ color: {PETROL}; }}
         .kpi-ocre {{ color: {OCRE}; }}
         section[data-testid="stSidebar"] {{
+            background-color: {BG_PAGE};
             border-right: 1px solid {HAIRLINE};
         }}
         .stTabs [data-baseweb="tab-list"] {{
@@ -101,7 +114,7 @@ def inject_css():
             border-bottom: 1px solid {HAIRLINE};
         }}
         .stTabs [data-baseweb="tab"] {{
-            font-family: '{FONT_BODY}', sans-serif;
+            font-family: '{FONT_DISPLAY}', sans-serif;
             font-weight: 500;
             color: {INK_MUTED};
             padding-bottom: 0.6rem;
@@ -129,15 +142,15 @@ def kpi_block(value: str, label: str, color_class: str):
 
 def apply_minimal_layout(fig: go.Figure, titulo: str, horizontal: bool, pct: bool):
     fig.update_layout(
-        title=dict(text=titulo, font=dict(family=FONT_BODY, size=15, color=INK), x=0, xanchor="left"),
+        title=dict(text=titulo, font=dict(family=FONT_DISPLAY, size=15, color=INK), x=0, xanchor="left"),
         barmode="group",
         bargap=0.35,
-        font=dict(family=FONT_BODY, size=12, color=INK_MUTED),
+        font=dict(family=FONT_MONO, size=11, color=INK_MUTED),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         legend=dict(
             orientation="h", yanchor="bottom", y=1.04, x=0,
-            font=dict(size=12, color=INK_MUTED),
+            font=dict(family=FONT_BODY, size=12, color=INK_MUTED),
         ),
         height=380,
         margin=dict(t=70, b=20, l=10, r=10),
@@ -320,8 +333,8 @@ st.sidebar.markdown(
 # ---------------------------------------------------------------------------
 # ENCABEZADO
 # ---------------------------------------------------------------------------
-st.markdown('<div class="app-header">Estadística descriptiva del mercado laboral</div>', unsafe_allow_html=True)
-st.markdown('<div class="app-subhead">GEIH · Personas ocupadas, 2023–2025</div>', unsafe_allow_html=True)
+st.markdown('<div class="app-eyebrow">GEIH · PERSONAS OCUPADAS · 2023–2025</div>', unsafe_allow_html=True)
+st.markdown('<div class="app-header">Estadística descriptiva<br>del mercado laboral</div>', unsafe_allow_html=True)
 st.markdown('<hr class="app-rule">', unsafe_allow_html=True)
 
 tab_inicio, tab_formalidad, tab_ingresos = st.tabs(["Inicio", "Formalidad laboral", "Ingresos"])
