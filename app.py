@@ -62,7 +62,7 @@ div[class*="st-key-link_"] button:hover { color:$SECONDARY; background:transpare
 .st-key-filters label p { font-size:.78rem; color:$MUTED; font-weight:500; }
 .st-key-filters [data-baseweb="select"] > div { background:$SURFACE; border:1px solid $BORDER; border-radius:8px; min-height:38px; font-size:.88rem; }
 .st-key-filters [data-baseweb="tag"] { background:#E4EEF1; color:$PRIMARY; border-radius:6px; }
-.aux { color:$MUTED; font-size:.84rem; margin-top:.3rem; }
+.aux { color:$MUTED; font-size:.84rem; margin:.3rem 0 1rem; }
 
 /* Tipografía editorial */
 .eyebrow { color:$SECONDARY; font-weight:500; font-size:.95rem; margin-top:2.6rem; margin-bottom:.8rem; }
@@ -96,6 +96,19 @@ div[class*="st-key-link_"] button:hover { color:$SECONDARY; background:transpare
 .stTabs [aria-selected="true"] { color:$TEXT; font-weight:600; }
 .stTabs [data-baseweb="tab-highlight"] { background:$PRIMARY; height:2px; }
 .stTabs [data-baseweb="tab-border"] { background:transparent; }
+
+/* Asistente virtual: botón flotante presente en todas las secciones */
+.st-key-asistente { position:fixed; right:1.6rem; bottom:1.6rem; z-index:999; width:auto !important; }
+.st-key-asistente button { width:auto; background:$PRIMARY; color:#FFFFFF; border:none; border-radius:999px;
+    padding:.55rem 1.2rem; font-weight:500; font-size:.92rem; transition:background .15s; }
+.st-key-asistente button:hover { background:$SECONDARY; color:#FFFFFF; }
+.st-key-asistente button p { color:inherit; font-size:inherit; }
+div[data-testid="stPopoverBody"] { width:380px; max-width:92vw; max-height:70vh; overflow:auto;
+    background:$SURFACE; border:1px solid $BORDER; border-radius:10px; padding:1.2rem; }
+.as-title { font-family:'$F_DISPLAY',sans-serif; font-size:1.2rem; font-weight:600; }
+.as-text { color:$MUTED; font-size:.92rem; line-height:1.5; margin:.3rem 0 1rem; }
+.as-label { color:$MUTED; font-size:.8rem; font-weight:500; margin-bottom:.4rem; }
+.as-q { font-size:.92rem; padding:.55rem 0; border-top:1px solid $BORDER; }
 
 @media (max-width:900px) {
     .block-container { padding:1rem 1rem 2rem; }
@@ -333,13 +346,13 @@ FILTROS = [("anio", "Año"), ("Mes Letras", "Mes"), ("departamento", "Departamen
            ("sexo", "Sexo"), ("nivel_educativo", "Educación")]
 
 
-def barra_filtros(df_raw):
+def barra_filtros(df_raw, clave):
     """Filtros horizontales; vacío = Todos. Devuelve el DataFrame filtrado."""
     sel = {}
     with st.container(key="filters"):
         for col, (c, etiqueta) in zip(st.columns(len(FILTROS), gap="medium"), FILTROS):
             opciones = MESES_ORDEN if c == "Mes Letras" else sorted(df_raw[c].dropna().unique().tolist(), key=str)
-            sel[c] = col.multiselect(etiqueta, opciones, placeholder="Todos", key=f"f_{c}")
+            sel[c] = col.multiselect(etiqueta, opciones, placeholder="Todos", key=f"f_{clave}_{c}")
         df = df_raw
         for c, valores in sel.items():
             if valores:
@@ -374,10 +387,26 @@ def pie():
                 unsafe_allow_html=True)
 
 
+def asistente():
+    """Asistente virtual: botón flotante visible en todas las secciones (aún sin lógica)."""
+    with st.container(key="asistente"):
+        with st.popover("Asistente virtual"):
+            st.markdown(
+                '<div class="as-title">Asistente virtual</div>'
+                '<div class="as-text">Próximamente podrás hacerle preguntas sobre los datos que ves en cada sección.</div>'
+                '<div class="as-label">Ejemplos de preguntas</div>'
+                '<div class="as-q">¿Qué departamento tiene mayor formalidad?</div>'
+                '<div class="as-q">¿Cómo ha cambiado el ingreso promedio por año?</div>'
+                '<div class="as-q">¿Qué diferencia hay entre promedio y mediana?</div>',
+                unsafe_allow_html=True)
+            st.text_input("Pregunta", placeholder="Escribe tu pregunta sobre los datos",
+                          disabled=True, label_visibility="collapsed", key="asistente_input")
+
+
 # ---------------------------------------------------------------------------
 # PÁGINAS
 # ---------------------------------------------------------------------------
-def pagina_inicio(df, df_raw):
+def pagina_inicio(df_raw):
     a0, a1 = int(df_raw["anio"].min()), int(df_raw["anio"].max())
     periodo = f"{a0}–{a1}" if a0 != a1 else f"{a0}"
     c1, c2 = st.columns([1.7, 1], gap="large", vertical_alignment="bottom")
@@ -389,8 +418,8 @@ def pagina_inicio(df, df_raw):
                 unsafe_allow_html=True)
     st.markdown('<div style="height:2.2rem"></div>', unsafe_allow_html=True)
 
-    pf, pnf = pct_formal_no_formal(df)
-    prom, med = promedio_mediana_ingreso(df)
+    pf, pnf = pct_formal_no_formal(df_raw)
+    prom, med = promedio_mediana_ingreso(df_raw)
     with st.container(key="kpis"):
         k = st.columns(4)
         with k[0]: kpi(fmt_pct(pf), "Trabajo formal", "k-primary")
@@ -416,26 +445,30 @@ def pagina_inicio(df, df_raw):
     pie()
 
 
-def pagina_formalidad(df):
+def pagina_formalidad(df_raw):
+    cabecera = st.container()
+    st.markdown('<hr class="rule">', unsafe_allow_html=True)
+    df = barra_filtros(df_raw, "formalidad")
     pf, pnf = pct_formal_no_formal(df)
-    with st.container(key="kpis"):
+    with cabecera, st.container(key="kpis"):
         c0, c1, c2 = st.columns([1.6, 1, 1], gap="large", vertical_alignment="center")
         with c0: encabezado("Formalidad laboral", "Proporción de personas ocupadas con empleo formal y no formal.")
         with c1: kpi(fmt_pct(pf), "Trabajo formal", "k-primary")
         with c2: kpi(fmt_pct(pnf), "Trabajo no formal", "k-teal")
-    st.markdown('<hr class="rule">', unsafe_allow_html=True)
     bloque_graficos(df, grafico_formalidad)
     pie()
 
 
-def pagina_ingresos(df):
+def pagina_ingresos(df_raw):
+    cabecera = st.container()
+    st.markdown('<hr class="rule">', unsafe_allow_html=True)
+    df = barra_filtros(df_raw, "ingresos")
     prom, med = promedio_mediana_ingreso(df)
-    with st.container(key="kpis"):
+    with cabecera, st.container(key="kpis"):
         c0, c1, c2 = st.columns([1.6, 1, 1], gap="large", vertical_alignment="center")
         with c0: encabezado("Ingresos", "Promedio y mediana del ingreso laboral total.")
         with c1: kpi(fmt_cop(prom), "Ingreso promedio", "k-primary")
         with c2: kpi(fmt_cop(med), "Mediana", "k-accent")
-    st.markdown('<hr class="rule">', unsafe_allow_html=True)
     bloque_graficos(df, grafico_ingreso)
     pie()
 
@@ -455,16 +488,17 @@ if "page" not in st.session_state:
 
 df_raw = load_data(DATA_PATH)
 barra_nav()
-df = barra_filtros(df_raw)
 
 pagina = st.session_state.page
 if pagina == "inicio":
-    pagina_inicio(df, df_raw)
+    pagina_inicio(df_raw)
 elif pagina == "formalidad":
-    pagina_formalidad(df)
+    pagina_formalidad(df_raw)
 elif pagina == "ingresos":
-    pagina_ingresos(df)
+    pagina_ingresos(df_raw)
 elif pagina == "salario":
     pagina_vacia("Proyección de salario", "Estimación del ingreso laboral según el perfil de la persona.")
 else:
     pagina_vacia("Probabilidad de empleo formal", "Estimación de la probabilidad de conseguir un empleo formal.")
+
+asistente()
