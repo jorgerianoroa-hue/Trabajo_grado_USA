@@ -97,18 +97,23 @@ div[class*="st-key-link_"] button:hover { color:$SECONDARY; background:transpare
 .stTabs [data-baseweb="tab-highlight"] { background:$PRIMARY; height:2px; }
 .stTabs [data-baseweb="tab-border"] { background:transparent; }
 
-/* Asistente virtual: botón flotante presente en todas las secciones */
-.st-key-asistente { position:fixed; right:1.6rem; bottom:1.6rem; z-index:999; width:auto !important; }
-.st-key-asistente button { width:auto; background:$PRIMARY; color:#FFFFFF; border:none; border-radius:999px;
-    padding:.55rem 1.2rem; font-weight:500; font-size:.92rem; transition:background .15s; }
-.st-key-asistente button:hover { background:$SECONDARY; color:#FFFFFF; }
-.st-key-asistente button p { color:inherit; font-size:inherit; }
-div[data-testid="stPopoverBody"] { width:380px; max-width:92vw; max-height:70vh; overflow:auto;
-    background:$SURFACE; border:1px solid $BORDER; border-radius:10px; padding:1.2rem; }
-.as-title { font-family:'$F_DISPLAY',sans-serif; font-size:1.2rem; font-weight:600; }
-.as-text { color:$MUTED; font-size:.92rem; line-height:1.5; margin:.3rem 0 1rem; }
-.as-label { color:$MUTED; font-size:.8rem; font-weight:500; margin-bottom:.4rem; }
-.as-q { font-size:.92rem; padding:.55rem 0; border-top:1px solid $BORDER; }
+/* Asistente virtual: panel de chat fijo a la derecha, visible en todas las secciones */
+[data-testid="stToolbar"] { display:none; }
+.st-key-chat { position:fixed; top:0; right:0; bottom:0; width:380px !important; z-index:100; background:$SURFACE;
+    border-left:1px solid $BORDER; padding:1.4rem 1.2rem 1rem; overflow-y:auto; }
+.chat-title { font-family:'$F_DISPLAY',sans-serif; font-size:1.2rem; font-weight:600; }
+.chat-sub { color:$MUTED; font-size:.9rem; margin-top:.2rem; }
+.st-key-chat [data-testid="stChatMessage"] { background:transparent; padding:.35rem 0; }
+.st-key-chat [data-testid="stChatInput"] { border:1px solid $BORDER; border-radius:10px; background:$SURFACE; }
+div[class*="st-key-sug_"] button { width:100%; min-height:0; justify-content:flex-start; text-align:left; background:transparent;
+    border:none; border-top:1px solid $BORDER; border-radius:0; padding:.55rem 0; color:$TEXT; font-size:.9rem; font-weight:400; transition:color .15s; }
+div[class*="st-key-sug_"] button:hover { color:$PRIMARY; background:transparent; }
+div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; }
+.st-key-chat_reset button { width:auto; min-height:0; padding:0; background:transparent; border:none; color:$MUTED; font-size:.84rem; }
+.st-key-chat_reset button:hover { color:$PRIMARY; background:transparent; text-decoration:underline; }
+@media (min-width:1100px) { .block-container { max-width:none; padding-right:420px; } }
+@media (max-width:1099px) { .st-key-chat { position:static; width:100% !important; border-left:none;
+    border-top:1px solid $BORDER; margin-top:2rem; padding:1.2rem 0 0; } }
 
 @media (max-width:900px) {
     .block-container { padding:1rem 1rem 2rem; }
@@ -387,20 +392,59 @@ def pie():
                 unsafe_allow_html=True)
 
 
+BIENVENIDA = {"role": "assistant", "content": "Hola. Estoy en desarrollo, pero pronto podré responder "
+              "tus preguntas sobre los datos de cada sección."}
+SUGERENCIAS = {
+    "formalidad": ["¿Qué departamento tiene mayor formalidad?",
+                   "¿Cómo cambia la formalidad según el nivel educativo?",
+                   "¿Cuál es el porcentaje de trabajo formal?"],
+    "ingresos": ["¿Qué diferencia hay entre promedio y mediana?",
+                 "¿Cómo ha cambiado el ingreso por año?",
+                 "¿Qué sector tiene mayor ingreso promedio?"],
+}
+SUGERENCIAS_BASE = ["¿Qué datos puedo consultar aquí?", "¿Qué significa trabajo formal?"]
+
+
+def responder(pregunta, pagina):
+    """Punto de integración del asistente: reemplazar por la llamada al modelo."""
+    return ("Todavía no puedo responder preguntas. Estoy en desarrollo y pronto podré "
+            "ayudarte a interpretar los datos de esta sección.")
+
+
+def enviar(pregunta):
+    st.session_state.chat += [
+        {"role": "user", "content": pregunta},
+        {"role": "assistant", "content": responder(pregunta, st.session_state.page)},
+    ]
+
+
+def reiniciar_chat():
+    st.session_state.chat = [BIENVENIDA]
+
+
 def asistente():
-    """Asistente virtual: botón flotante visible en todas las secciones (aún sin lógica)."""
-    with st.container(key="asistente"):
-        with st.popover("Asistente virtual"):
-            st.markdown(
-                '<div class="as-title">Asistente virtual</div>'
-                '<div class="as-text">Próximamente podrás hacerle preguntas sobre los datos que ves en cada sección.</div>'
-                '<div class="as-label">Ejemplos de preguntas</div>'
-                '<div class="as-q">¿Qué departamento tiene mayor formalidad?</div>'
-                '<div class="as-q">¿Cómo ha cambiado el ingreso promedio por año?</div>'
-                '<div class="as-q">¿Qué diferencia hay entre promedio y mediana?</div>',
-                unsafe_allow_html=True)
-            st.text_input("Pregunta", placeholder="Escribe tu pregunta sobre los datos",
-                          disabled=True, label_visibility="collapsed", key="asistente_input")
+    """Chatbot fijo y desplegado en todas las secciones."""
+    if "chat" not in st.session_state:
+        st.session_state.chat = [BIENVENIDA]
+    with st.container(key="chat"):
+        st.markdown('<div class="chat-title">Asistente virtual<span class="tag">En desarrollo</span></div>'
+                    '<div class="chat-sub">Pregunta sobre los datos de esta sección.</div>',
+                    unsafe_allow_html=True)
+        mensajes = st.container(height=320, border=False)
+        if len(st.session_state.chat) == 1:
+            for i, q in enumerate(SUGERENCIAS.get(st.session_state.page, SUGERENCIAS_BASE)):
+                with st.container(key=f"sug_{i}"):
+                    st.button(q, key=f"sug_btn_{i}", on_click=enviar, args=(q,))
+        pregunta = st.chat_input("Escribe tu pregunta", key="chat_input")
+        if pregunta:
+            enviar(pregunta)
+        if len(st.session_state.chat) > 1:
+            with st.container(key="chat_reset"):
+                st.button("Nueva conversación", key="chat_reset_btn", on_click=reiniciar_chat)
+        with mensajes:
+            for m in st.session_state.chat:
+                avatar = ":material/smart_toy:" if m["role"] == "assistant" else ":material/person:"
+                st.chat_message(m["role"], avatar=avatar).write(m["content"])
 
 
 # ---------------------------------------------------------------------------
