@@ -1,16 +1,17 @@
 """
-Mercado laboral (GEIH): landing + dashboards + secciones en desarrollo.
+Mercado laboral de Colombia (GEIH): análisis descriptivo.
 Ejecutar con:  streamlit run app.py
 """
 
 from pathlib import Path
+from string import Template
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
 st.set_page_config(
-    page_title="Estadística descriptiva - Mercado laboral",
+    page_title="Mercado laboral de Colombia",
     page_icon="◆",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -21,355 +22,117 @@ MESES_ORDEN = ["Ene", "Feb", "Mar", "Abr", "May", "Jun",
                "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
 # ---------------------------------------------------------------------------
-# TOKENS: papel claro frío; PRIMARY = formal / promedio, ACCENT = no formal / mediana
+# TOKENS DE DISEÑO
+# Formal / promedio = PRIMARY · No formal = NOFORMAL (teal) · Mediana = ACCENT
 # ---------------------------------------------------------------------------
-BG = "#F8FAFC"
-SURFACE = "#FFFFFF"
-TEXT = "#111827"
-MUTED = "#64748B"
-BORDER = "#E2E8F0"
-GRID = "#E5E7EB"
-PRIMARY = "#164E63"
-SECONDARY = "#0F766E"
-ACCENT = "#D97706"
-FORMAL = PRIMARY
-NON_FORMAL = SECONDARY
-F_DISPLAY = "Manrope"
-F_BODY = "Inter"
+BG, SURFACE = "#F8FAFC", "#FFFFFF"
+TEXT, MUTED = "#111827", "#64748B"
+PRIMARY, SECONDARY, ACCENT = "#164E63", "#0F766E", "#D97706"
+NOFORMAL = "#5BA8A0"
+BORDER, GRIDLINE = "#E2E8F0", "#EEF2F6"
+F_DISPLAY, F_BODY = "Manrope", "Inter"
+
+CSS = Template("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@500;600;700&display=swap');
+html, body, [class*="css"], .stApp { font-family:'$F_BODY',sans-serif; color:$TEXT; }
+.stApp { background:$BG; }
+.block-container { max-width:1440px; padding:1.2rem 2.4rem 3rem; }
+header[data-testid="stHeader"] { background:transparent; }
+footer { visibility:hidden; }
+h1,h2,h3 { font-family:'$F_DISPLAY',sans-serif; }
+
+/* Navegación superior */
+.brand { font-family:'$F_DISPLAY',sans-serif; font-weight:700; font-size:1.1rem; color:$PRIMARY; letter-spacing:-0.01em; padding-top:.3rem; }
+.st-key-nav button { width:auto; min-height:0; padding:.35rem 0 .45rem; background:transparent; border:none;
+    border-bottom:2px solid transparent; border-radius:0; color:$MUTED; font-weight:500; font-size:.95rem;
+    transition:color .15s, border-color .15s; }
+.st-key-nav button:hover { color:$TEXT; background:transparent; border-bottom-color:$BORDER; }
+.st-key-nav button[kind="primary"], .st-key-nav button[data-testid="stBaseButton-primary"],
+.st-key-nav button[kind="primary"]:hover, .st-key-nav button[data-testid="stBaseButton-primary"]:hover {
+    color:$PRIMARY; font-weight:600; border-bottom-color:$PRIMARY; background:transparent; }
+.st-key-nav button p, div[class*="st-key-link_"] button p { color:inherit; font-size:inherit; font-weight:inherit; }
+
+/* Enlaces de texto (Explorar →) */
+div[class*="st-key-link_"] button { width:auto; min-height:0; padding:0; background:transparent; border:none;
+    color:$PRIMARY; font-weight:500; font-size:.95rem; justify-content:flex-start; transition:color .15s; }
+div[class*="st-key-link_"] button:hover { color:$SECONDARY; background:transparent; text-decoration:underline; text-underline-offset:4px; }
+
+/* Filtros compactos */
+.st-key-filters label p { font-size:.78rem; color:$MUTED; font-weight:500; }
+.st-key-filters [data-baseweb="select"] > div { background:$SURFACE; border:1px solid $BORDER; border-radius:8px; min-height:38px; font-size:.88rem; }
+.st-key-filters [data-baseweb="tag"] { background:#E4EEF1; color:$PRIMARY; border-radius:6px; }
+.aux { color:$MUTED; font-size:.84rem; margin-top:.3rem; }
+
+/* Tipografía editorial */
+.eyebrow { color:$SECONDARY; font-weight:500; font-size:.95rem; margin-top:2.6rem; margin-bottom:.8rem; }
+.hero { font-family:'$F_DISPLAY',sans-serif; font-size:3.4rem; font-weight:600; line-height:1.08; letter-spacing:-0.028em; }
+.hero-sub { color:$MUTED; font-size:1.1rem; line-height:1.55; max-width:520px; padding-bottom:.5rem; }
+.page-title { font-family:'$F_DISPLAY',sans-serif; font-size:2.2rem; font-weight:600; letter-spacing:-0.02em; margin-top:1.4rem; }
+.page-sub { color:$MUTED; font-size:1.02rem; margin-top:.3rem; max-width:480px; }
+.sec-title { font-family:'$F_DISPLAY',sans-serif; font-size:1.6rem; font-weight:600; letter-spacing:-0.015em; }
+.sec-sub { color:$MUTED; font-size:.95rem; margin-top:.4rem; max-width:300px; }
+.item { border-top:1px solid $BORDER; padding-top:1rem; }
+.item-cat { color:$MUTED; font-size:.84rem; margin-bottom:.35rem; }
+.item-title { font-family:'$F_DISPLAY',sans-serif; font-size:1.3rem; font-weight:600; margin-bottom:.35rem; }
+.item-text { color:$MUTED; font-size:.95rem; line-height:1.5; margin-bottom:.5rem; min-height:3rem; }
+.tag { color:$ACCENT; font-size:.78rem; font-weight:500; border:1px solid $ACCENT; border-radius:999px; padding:0 .5rem; margin-left:.6rem; }
+.chart-title { font-family:'$F_DISPLAY',sans-serif; font-size:1rem; font-weight:600; margin:1.6rem 0 .2rem; }
+.rule { border:none; border-top:1px solid $BORDER; margin:1rem 0 1.2rem; }
+.foot { border-top:1px solid $BORDER; color:$MUTED; font-size:.82rem; margin-top:4rem; padding-top:1rem; }
+.canvas-empty { min-height:460px; border:1px dashed $BORDER; border-radius:10px; display:flex; align-items:center; justify-content:center; color:$MUTED; font-size:.95rem; margin-top:1.5rem; }
+
+/* KPIs: número grande + etiqueta + divisor vertical */
+.kpi-v { font-family:'$F_BODY',sans-serif; font-size:2.4rem; font-weight:600; line-height:1.1; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; }
+.kpi-l { color:$MUTED; font-size:.88rem; margin-top:.2rem; }
+.k-primary { color:$PRIMARY; } .k-teal { color:$SECONDARY; } .k-accent { color:$ACCENT; }
+.st-key-kpis [data-testid="stColumn"]:not(:first-child), .st-key-kpis [data-testid="column"]:not(:first-child) {
+    border-left:1px solid $BORDER; padding-left:1.5rem; }
+
+/* Tabs minimalistas */
+.stTabs [data-baseweb="tab-list"] { gap:1.7rem; border-bottom:1px solid $BORDER; background:transparent; }
+.stTabs [data-baseweb="tab"] { background:transparent; padding:.5rem 0; color:$MUTED; font-weight:500; font-size:.95rem; transition:color .15s; }
+.stTabs [data-baseweb="tab"]:hover { color:$TEXT; background:transparent; }
+.stTabs [aria-selected="true"] { color:$TEXT; font-weight:600; }
+.stTabs [data-baseweb="tab-highlight"] { background:$PRIMARY; height:2px; }
+.stTabs [data-baseweb="tab-border"] { background:transparent; }
+
+@media (max-width:900px) {
+    .block-container { padding:1rem 1rem 2rem; }
+    .hero { font-size:2.3rem; }
+    .st-key-nav [data-testid="stHorizontalBlock"] { flex-wrap:wrap; gap:.2rem 1.3rem; }
+    .st-key-nav [data-testid="stColumn"] { min-width:0 !important; flex:0 0 auto !important; width:auto !important; }
+    .st-key-nav [data-testid="stColumn"]:first-child { flex:1 0 100% !important; }
+    .st-key-kpis [data-testid="stColumn"]:not(:first-child) { border-left:none; padding-left:0; }
+}
+</style>
+""")
 
 
 def inject_css():
-    st.markdown(
-        f"""
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap');
-
-        html, body, [class*="css"] {{
-            font-family: '{F_BODY}', sans-serif;
-            color: {TEXT};
-        }}
-
-        .stApp {{
-            background: {BG};
-        }}
-
-        .block-container {{
-            max-width: 1480px;
-            padding-top: 1.1rem;
-            padding-bottom: 3rem;
-            padding-left: 2.4rem;
-            padding-right: 2.4rem;
-        }}
-
-        section[data-testid="stSidebar"] {{
-            background: {SURFACE};
-            border-right: 1px solid {BORDER};
-        }}
-
-        footer {{ visibility: hidden; }}
-
-        h1, h2, h3, h4, h5 {{
-            font-family: '{F_DISPLAY}', sans-serif;
-            color: {TEXT};
-            letter-spacing: -0.025em;
-        }}
-
-        /* Navegación superior */
-        .topbar {{
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:2rem;
-            padding:.35rem 0 .9rem;
-            border-bottom:1px solid {BORDER};
-            margin-bottom:1.5rem;
-        }}
-
-        .brand {{
-            font-family:'{F_DISPLAY}',sans-serif;
-            font-size:1.02rem;
-            font-weight:700;
-            letter-spacing:-.02em;
-            white-space:nowrap;
-        }}
-
-        .brand-dot {{
-            display:inline-block;
-            width:8px;
-            height:8px;
-            border-radius:50%;
-            background:{PRIMARY};
-            margin-right:.45rem;
-            vertical-align:1px;
-        }}
-
-        .nav-caption {{
-            color:{MUTED};
-            font-size:.76rem;
-            letter-spacing:.08em;
-            text-transform:uppercase;
-        }}
-
-        /* Botones */
-        .stButton > button {{
-            width:100%;
-            background:transparent;
-            color:{MUTED};
-            border:0;
-            border-bottom:2px solid transparent;
-            border-radius:0;
-            padding:.45rem .2rem;
-            font-family:'{F_BODY}',sans-serif;
-            font-weight:500;
-            font-size:.88rem;
-            transition:color .15s, border-color .15s;
-        }}
-
-        .stButton > button:hover {{
-            color:{PRIMARY};
-            border-color:{PRIMARY};
-            background:transparent;
-        }}
-
-        .stButton > button[kind="primary"],
-        .stButton > button[data-testid="stBaseButton-primary"] {{
-            background:transparent;
-            color:{PRIMARY};
-            border-color:{PRIMARY};
-        }}
-
-        /* Hero */
-        .eyebrow {{
-            color:{PRIMARY};
-            font-size:.76rem;
-            font-weight:700;
-            letter-spacing:.11em;
-            text-transform:uppercase;
-            margin-top:.5rem;
-            margin-bottom:.65rem;
-        }}
-
-        .hero {{
-            font-family:'{F_DISPLAY}',sans-serif;
-            font-size:clamp(2.7rem, 5vw, 4.8rem);
-            font-weight:700;
-            line-height:.98;
-            letter-spacing:-.055em;
-            max-width:900px;
-            margin:.4rem 0 1rem;
-        }}
-
-        .hero-sub {{
-            color:{MUTED};
-            font-size:1.05rem;
-            line-height:1.6;
-            max-width:760px;
-            margin-bottom:2rem;
-        }}
-
-        .page-title {{
-            font-family:'{F_DISPLAY}',sans-serif;
-            font-size:2.5rem;
-            font-weight:700;
-            letter-spacing:-.045em;
-            margin:.7rem 0 .35rem;
-        }}
-
-        .page-sub {{
-            color:{MUTED};
-            max-width:760px;
-            font-size:.98rem;
-            line-height:1.5;
-            margin-bottom:1.4rem;
-        }}
-
-        /* KPI editorial */
-        .kpi-strip {{
-            display:grid;
-            grid-template-columns:repeat(4,1fr);
-            border-top:1px solid {BORDER};
-            border-bottom:1px solid {BORDER};
-            margin:1.5rem 0 2.5rem;
-        }}
-
-        .kpi-item {{
-            padding:1.15rem 1.2rem 1.2rem 0;
-            margin-right:1.2rem;
-            border-right:1px solid {BORDER};
-        }}
-
-        .kpi-item:last-child {{
-            border-right:0;
-            margin-right:0;
-        }}
-
-        .kpi-value {{
-            font-family:'{F_DISPLAY}',sans-serif;
-            font-size:2.35rem;
-            font-weight:700;
-            line-height:1;
-            letter-spacing:-.045em;
-            font-variant-numeric:tabular-nums;
-        }}
-
-        .kpi-label {{
-            color:{MUTED};
-            font-size:.82rem;
-            margin-top:.45rem;
-        }}
-
-        .kpi-primary {{ color:{PRIMARY}; }}
-        .kpi-secondary {{ color:{SECONDARY}; }}
-        .kpi-accent {{ color:{ACCENT}; }}
-
-        .section-kicker {{
-            color:{MUTED};
-            font-size:.74rem;
-            font-weight:700;
-            letter-spacing:.11em;
-            text-transform:uppercase;
-            margin-top:2rem;
-            margin-bottom:.35rem;
-        }}
-
-        .group-title {{
-            font-family:'{F_DISPLAY}',sans-serif;
-            font-size:1.45rem;
-            font-weight:700;
-            letter-spacing:-.025em;
-            margin:.1rem 0 .25rem;
-        }}
-
-        .group-sub {{
-            color:{MUTED};
-            font-size:.9rem;
-            margin-bottom:1rem;
-        }}
-
-        /* Cards muy ligeras */
-        div[data-testid="stVerticalBlockBorderWrapper"] {{
-            background:{SURFACE};
-            border:1px solid {BORDER};
-            border-radius:10px;
-            box-shadow:none;
-        }}
-
-        .card-title {{
-            font-family:'{F_DISPLAY}',sans-serif;
-            font-size:1.18rem;
-            font-weight:700;
-            margin-bottom:.3rem;
-        }}
-
-        .card-text {{
-            color:{MUTED};
-            font-size:.88rem;
-            line-height:1.55;
-            min-height:2.7rem;
-            margin-bottom:.7rem;
-        }}
-
-        .tag {{
-            color:{ACCENT};
-            font-size:.68rem;
-            font-weight:700;
-            border:1px solid #F2C48B;
-            border-radius:999px;
-            padding:.12rem .5rem;
-            margin-left:.45rem;
-            vertical-align:middle;
-        }}
-
-        .canvas-empty {{
-            min-height:360px;
-            border:1px dashed {BORDER};
-            border-radius:10px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            color:{MUTED};
-            font-size:.9rem;
-            background:{SURFACE};
-        }}
-
-        .rule {{
-            border:none;
-            border-top:1px solid {BORDER};
-            margin:1.5rem 0;
-        }}
-
-        .foot {{
-            color:{MUTED};
-            font-size:.78rem;
-            margin-top:3rem;
-            padding-top:1rem;
-            border-top:1px solid {BORDER};
-        }}
-
-        /* Tabs */
-        .stTabs [data-baseweb="tab-list"] {{
-            gap:1.4rem;
-            border-bottom:1px solid {BORDER};
-        }}
-
-        .stTabs [data-baseweb="tab"] {{
-            font-family:'{F_BODY}',sans-serif;
-            font-weight:500;
-            color:{MUTED};
-            padding:.55rem 0 .7rem;
-            background:transparent;
-        }}
-
-        .stTabs [aria-selected="true"] {{
-            color:{TEXT};
-        }}
-
-        /* Selectores compactos */
-        div[data-baseweb="select"] > div {{
-            border-color:{BORDER};
-            border-radius:8px;
-            background:{SURFACE};
-        }}
-
-        /* Dataframes / métricas nativas */
-        [data-testid="stMetricValue"] {{
-            font-family:'{F_DISPLAY}',sans-serif;
-            letter-spacing:-.04em;
-        }}
-
-        @media (max-width: 900px) {{
-            .block-container {{
-                padding-left:1rem;
-                padding-right:1rem;
-            }}
-            .kpi-strip {{
-                grid-template-columns:repeat(2,1fr);
-            }}
-            .kpi-item:nth-child(2) {{
-                border-right:0;
-            }}
-        }}
-
-        @media (max-width: 600px) {{
-            .hero {{ font-size:2.55rem; }}
-            .kpi-strip {{ grid-template-columns:1fr; }}
-            .kpi-item {{
-                border-right:0;
-                border-bottom:1px solid {BORDER};
-                padding-right:0;
-                margin-right:0;
-            }}
-            .kpi-item:last-child {{ border-bottom:0; }}
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
+    st.markdown(CSS.safe_substitute(
+        F_BODY=F_BODY, F_DISPLAY=F_DISPLAY, TEXT=TEXT, BG=BG, SURFACE=SURFACE, MUTED=MUTED,
+        PRIMARY=PRIMARY, SECONDARY=SECONDARY, ACCENT=ACCENT, BORDER=BORDER,
+    ), unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
-# DATOS Y MEDIDAS
+# FORMATO (separadores colombianos: 1.850.000 y 61,4%)
+# ---------------------------------------------------------------------------
+def fmt_n(x):
+    return f"{x:,.0f}".replace(",", ".")
+
+
+def fmt_cop(x):
+    return "$" + fmt_n(x)
+
+
+def fmt_pct(x):
+    return f"{x:.1%}".replace(".", ",")
+
+
+# ---------------------------------------------------------------------------
+# CARGA DE DATOS Y MEDIDAS (sin cambios de lógica)
 # ---------------------------------------------------------------------------
 @st.cache_data(show_spinner="Cargando datos...")
 def load_data(path: Path) -> pd.DataFrame:
@@ -404,195 +167,128 @@ def agrupar(df, dim, col, funcs, por_n=True):
 
 
 # ---------------------------------------------------------------------------
-# GRÁFICOS
+# TEMA PLOTLY CENTRALIZADO
 # ---------------------------------------------------------------------------
-def estilizar_figura(fig, height=390, showlegend=True):
-    fig.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family=F_BODY, size=11, color=TEXT),
-        title=dict(
-            font=dict(family=F_DISPLAY, size=16, color=TEXT),
-            x=0, xanchor="left",
-        ),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            x=0,
-            font=dict(size=11, color=MUTED),
-        ) if showlegend else dict(visible=False),
-        height=height,
-        margin=dict(t=58, b=28, l=8, r=8),
-        hoverlabel=dict(
-            bgcolor=SURFACE,
-            bordercolor=BORDER,
-            font=dict(family=F_BODY, size=12, color=TEXT),
-        ),
-    )
+PLOTLY_LAYOUT = dict(
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font=dict(family=F_BODY, size=12, color=MUTED),
+    legend=dict(orientation="h", yanchor="bottom", y=1.0, x=0, title=dict(text=""),
+                font=dict(size=12, color=MUTED)),
+    margin=dict(t=34, b=8, l=4, r=16),
+    hoverlabel=dict(bgcolor=SURFACE, bordercolor=BORDER, font=dict(family=F_BODY, size=12, color=TEXT)),
+    separators=",.",
+    bargap=0.4,
+)
+PLOT_CONFIG = {"displayModeBar": False}
+
+
+def estilizar_figura(fig, altura, pct, horizontal, apilado=False, margen_der=16):
+    fig.update_layout(**PLOTLY_LAYOUT)
+    fig.update_layout(height=altura, barmode="stack" if apilado else "group",
+                      margin=dict(t=34, b=8, l=4, r=margen_der))
+    valor = dict(showgrid=True, gridcolor=GRIDLINE, zeroline=False, showline=False,
+                 tickfont=dict(size=11), tickformat=".0%" if pct else ",.0f",
+                 tickprefix="" if pct else "$")
+    if pct and horizontal:
+        valor["range"] = [0, 1]
+    categoria = dict(showgrid=False, zeroline=False, showline=False, ticks="", type="category",
+                     automargin=True, tickfont=dict(size=12, color=TEXT))
+    if horizontal:
+        fig.update_xaxes(**valor)
+        fig.update_yaxes(**categoria)
+    else:
+        fig.update_yaxes(**valor)
+        fig.update_xaxes(**categoria)
     return fig
 
 
-def barras(d, dim, series, titulo, horizontal, pct, apilado=False):
-    fig = go.Figure()
-    fmt = ".0%" if pct else ",.0f"
+def grafico_barras(d, dim, series, pct, apilado=False, marcador=None, key=None):
+    """Barras horizontales (ranking). series: (nombre, columna, color, color_texto)."""
     cat = d[dim].astype(str)
-
-    for nombre, col, color in series:
-        v = d[col]
-        fig.add_bar(
-            name=nombre,
-            x=v if horizontal else cat,
-            y=cat if horizontal else v,
-            orientation="h" if horizontal else "v",
-            marker=dict(
-                color=color,
-                line=dict(width=0),
-            ),
-            texttemplate=f"%{{{'x' if horizontal else 'y'}:{fmt}}}",
-            cliponaxis=False,
-            textposition="outside" if not apilado else "inside",
-            textfont=dict(
-                color=TEXT if not apilado else "#FFFFFF",
-                size=10,
-            ),
-            hovertemplate=f"{nombre}: %{{{'x' if horizontal else 'y'}:{fmt}}}<extra></extra>",
-        )
-
-    fig.update_layout(
-        title=titulo,
-        barmode="stack" if apilado else "group",
-        bargap=0.28,
-    )
-
-    val = dict(
-        showgrid=True,
-        gridcolor=GRID,
-        gridwidth=1,
-        zeroline=False,
-        tickformat=fmt,
-        showline=False,
-    )
-
-    if pct:
-        val["range"] = [0, 1]
-
-    cats = dict(
-        showgrid=False,
-        zeroline=False,
-        type="category",
-        automargin=True,
-        showline=False,
-    )
-
-    if horizontal:
-        fig.update_xaxes(**val)
-        fig.update_yaxes(**cats)
-        height = max(360, 28 * len(d) + 125)
-    else:
-        fig.update_yaxes(**val)
-        fig.update_xaxes(**cats)
-        height = 380
-
-    estilizar_figura(fig, height=height)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-
-
-def grafico_tendencia(df, dim, titulo, col="ingreso_laboral_total"):
-    d = agrupar(df, dim, col, ["mean", "median"], por_n=False)
-    x = d[dim].astype(str)
-
+    fmt, pre = ".1%" if pct else ",.0f", "" if pct else "$"
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=x,
-        y=d["mean"],
-        mode="lines+markers",
-        name="Promedio",
-        line=dict(color=PRIMARY, width=2.5),
-        marker=dict(size=6, color=PRIMARY),
-        hovertemplate="Promedio: $%{y:,.0f}<extra></extra>",
-    ))
-
-    if dim == "anio":
-        fig.add_trace(go.Scatter(
-            x=x,
-            y=d["median"],
-            mode="lines+markers",
-            name="Mediana",
-            line=dict(color=ACCENT, width=2, dash="dot"),
-            marker=dict(size=5, color=ACCENT),
-            hovertemplate="Mediana: $%{y:,.0f}<extra></extra>",
-        ))
-
-    fig.update_layout(title=titulo)
-    fig.update_yaxes(
-        showgrid=True,
-        gridcolor=GRID,
-        zeroline=False,
-        tickprefix="$",
-        tickformat=",.0f",
-        showline=False,
-    )
-    fig.update_xaxes(showgrid=False, showline=False, type="category")
-
-    estilizar_figura(fig, height=340)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-
-
-def grafico_formalidad(df, dim, titulo, horizontal=False, por_n=True):
-    d = agrupar(df, dim, "empleo_formal_pleno", ["mean"], por_n)
-    d["no"] = 1 - d["mean"]
-    if horizontal:
-        d = d.sort_values("mean", ascending=True)
-    barras(
-        d,
-        dim,
-        [
-            ("Trabajo formal", "mean", PRIMARY),
-            ("Trabajo no formal", "no", SECONDARY),
-        ],
-        titulo,
-        horizontal,
-        pct=True,
-        apilado=True,
-    )
-
-
-def grafico_ingreso(df, dim, titulo, horizontal=False, por_n=True):
-    if dim in ("anio", "Mes Letras"):
-        grafico_tendencia(
-            df,
-            dim,
-            titulo,
-            col="ingreso_laboral_total",
+    for nombre, col, color, txt in series:
+        fig.add_bar(
+            name=nombre, y=cat, x=d[col], orientation="h", marker=dict(color=color),
+            customdata=d["n"], texttemplate=f"{pre}%{{x:{fmt}}}", cliponaxis=False,
+            textposition="inside" if apilado else "outside", textfont=dict(color=txt, size=11),
+            hovertemplate=f"<b>%{{y}}</b><br>{nombre}: {pre}%{{x:{fmt}}}<br>Registros: %{{customdata:,}}<extra></extra>",
         )
-        return
-
-    d = agrupar(df, dim, "ingreso_laboral_total", ["mean", "median"], por_n)
-    if horizontal:
-        d = d.sort_values("mean", ascending=True)
-
-    series = [("Promedio", "mean", PRIMARY)]
-    if dim == "anio":
-        series.append(("Mediana", "median", ACCENT))
-
-    barras(d, dim, series, titulo, horizontal, pct=False)
+    if marcador:
+        nombre, col, color = marcador
+        fig.add_scatter(
+            name=nombre, y=cat, x=d[col], mode="markers", customdata=d["n"],
+            marker=dict(symbol="diamond", size=9, color=color, line=dict(color=SURFACE, width=1)),
+            hovertemplate=f"<b>%{{y}}</b><br>{nombre}: {pre}%{{x:{fmt}}}<extra></extra>",
+        )
+    estilizar_figura(fig, max(240, 30 * len(d) + 90), pct, True, apilado, margen_der=16 if pct else 70)
+    st.plotly_chart(fig, config=PLOT_CONFIG, key=key)
 
 
+def grafico_tendencia(d, dim, series, pct, key=None):
+    """Líneas finas con punto pequeño; etiqueta solo en el último punto. series: (nombre, columna, color)."""
+    x = d[dim].astype(str)
+    fmt, pre = ".1%" if pct else ",.0f", "" if pct else "$"
+    fig = go.Figure()
+    for nombre, col, color in series:
+        y = d[col]
+        etiquetas = [""] * (len(d) - 1) + [fmt_pct(y.iloc[-1]) if pct else fmt_cop(y.iloc[-1])]
+        fig.add_scatter(
+            name=nombre, x=x, y=y, mode="lines+markers+text", text=etiquetas,
+            textposition="top center", textfont=dict(color=color, size=11), cliponaxis=False,
+            line=dict(color=color, width=2), marker=dict(size=6, color=color),
+            hovertemplate=f"<b>%{{x}}</b><br>{nombre}: {pre}%{{y:{fmt}}}<extra></extra>",
+        )
+    estilizar_figura(fig, 320, pct, False, margen_der=40)
+    st.plotly_chart(fig, config=PLOT_CONFIG, key=key)
+
+
+def titulo_grafico(texto):
+    st.markdown(f'<div class="chart-title">{texto}</div>', unsafe_allow_html=True)
+
+
+def sin_datos():
+    st.caption("No hay registros para los filtros seleccionados.")
+
+
+def grafico_formalidad(df, dim, titulo, tendencia=False):
+    titulo_grafico(titulo)
+    if df.empty:
+        return sin_datos()
+    d = agrupar(df, dim, "empleo_formal_pleno", ["mean"], por_n=not tendencia)
+    d["no"] = 1 - d["mean"]
+    series = [("Trabajo formal", "mean", PRIMARY, "#FFFFFF"), ("Trabajo no formal", "no", NOFORMAL, TEXT)]
+    if tendencia:
+        grafico_tendencia(d, dim, [s[:3] for s in series], True, key=f"ch_formalidad_{dim}")
+    else:
+        grafico_barras(d.sort_values("mean"), dim, series, True, apilado=True, key=f"ch_formalidad_{dim}")
+
+
+def grafico_ingreso(df, dim, titulo, tendencia=False):
+    titulo_grafico(titulo)
+    if df.empty:
+        return sin_datos()
+    d = agrupar(df, dim, "ingreso_laboral_total", ["mean", "median"], por_n=not tendencia)
+    if tendencia:
+        grafico_tendencia(d, dim, [("Promedio", "mean", PRIMARY), ("Mediana", "median", ACCENT)],
+                          False, key=f"ch_ingreso_{dim}")
+    else:
+        grafico_barras(d.sort_values("mean"), dim, [("Promedio", "mean", PRIMARY, MUTED)], False,
+                       marcador=("Mediana", "median", ACCENT), key=f"ch_ingreso_{dim}")
+
+
+# Organización por pestañas: cada fila es una lista de gráficos que se muestran lado a lado
 GRUPOS = [
-    ("Departamento / Año / Mes", [
-        [("departamento", "Por Departamento", {})],
-        [("anio", "Por Año", {"por_n": False}), ("Mes Letras", "Por Mes", {"por_n": False})]]),
-    ("Educación / Estado civil / Etnia / Sexo", [
-        [("nivel_educativo", "Por Educación", {})],
-        [("estado_civil", "Por Estado Civil", {})],
-        [("etnia", "Por Etnia", {}), ("sexo", "Por Sexo", {})]]),
-    ("Contrato / Posición / Lugar", [
-        [("tipo_contrato", "Por Tipo de Contrato", {})],
-        [("posicion_ocupacional", "Por Posición Ocupacional", {})],
-        [("lugar_trabajo", "Por Lugar de Trabajo", {})]]),
-    ("Sector económico", [[("sector_economico_seccion", "Por Sector Económico", {"horizontal": True})]]),
-    ("Oficio", [[("oficio_gran_grupo", "Por Oficio", {"horizontal": True})]]),
+    ("Departamento", [[("departamento", "Por departamento", {})]]),
+    ("Tiempo", [[("anio", "Por año", {"tendencia": True}), ("Mes Letras", "Por mes", {"tendencia": True})]]),
+    ("Educación", [[("nivel_educativo", "Por nivel educativo", {})]]),
+    ("Demografía", [[("sexo", "Por sexo", {}), ("estado_civil", "Por estado civil", {})],
+                    [("etnia", "Por etnia", {})]]),
+    ("Contrato", [[("tipo_contrato", "Por tipo de contrato", {}), ("posicion_ocupacional", "Por posición ocupacional", {})],
+                  [("lugar_trabajo", "Por lugar de trabajo", {})]]),
+    ("Sector", [[("sector_economico_seccion", "Por sector económico", {})]]),
+    ("Oficio", [[("oficio_gran_grupo", "Por oficio", {})]]),
 ]
 
 
@@ -601,7 +297,7 @@ def bloque_graficos(df, fn):
     for tab, (_, filas) in zip(tabs, GRUPOS):
         with tab:
             for fila in filas:
-                cols = st.columns(len(fila)) if len(fila) > 1 else [st.container()]
+                cols = st.columns(len(fila), gap="large")
                 for col, (dim, tit, opts) in zip(cols, fila):
                     with col:
                         fn(df, dim, tit, **opts)
@@ -610,35 +306,9 @@ def bloque_graficos(df, fn):
 # ---------------------------------------------------------------------------
 # COMPONENTES DE INTERFAZ
 # ---------------------------------------------------------------------------
-def kpi_block(value, label, color="kpi-primary"):
-    return f"""
-    <div class="kpi-item">
-        <div class="kpi-value {color}">{value}</div>
-        <div class="kpi-label">{label}</div>
-    </div>
-    """
-
-
-def kpis_formalidad(df):
-    pf, pnf = pct_formal_no_formal(df)
-    st.markdown(
-        '<div class="kpi-strip">'
-        + kpi_block(f"{pf:.1%}", "Trabajo formal", "kpi-primary")
-        + kpi_block(f"{pnf:.1%}", "Trabajo no formal", "kpi-secondary")
-        + '</div>',
-        unsafe_allow_html=True,
-    )
-
-
-def kpis_ingreso(df):
-    prom, med = promedio_mediana_ingreso(df)
-    st.markdown(
-        '<div class="kpi-strip">'
-        + kpi_block(f"${prom:,.0f}", "Promedio de ingreso laboral", "kpi-primary")
-        + kpi_block(f"${med:,.0f}", "Mediana", "kpi-accent")
-        + '</div>',
-        unsafe_allow_html=True,
-    )
+def kpi(valor, etiqueta, clase):
+    st.markdown(f'<div class="kpi-v {clase}">{valor}</div><div class="kpi-l">{etiqueta}</div>',
+                unsafe_allow_html=True)
 
 
 def ir(pagina):
@@ -646,46 +316,62 @@ def ir(pagina):
 
 
 NAV = [("inicio", "Inicio"), ("formalidad", "Formalidad"), ("ingresos", "Ingresos"),
-       ("salario", "Proyección salarial"), ("empleo", "Empleo formal")]
+       ("salario", "Salarios"), ("empleo", "Empleo")]
 
 
 def barra_nav():
-    marca, *botones = st.columns([2.1, 1, 1, 1, 1.1, 1.25], vertical_alignment="center")
-    marca.markdown(
-        '<div class="brand"><span class="brand-dot"></span>Mercado laboral</div>',
-        unsafe_allow_html=True,
-    )
-    for col, (k, etiqueta) in zip(botones, NAV):
-        with col:
-            st.button(
-                etiqueta,
-                key=f"nav_{k}",
-                on_click=ir,
-                args=(k,),
-                type="primary" if st.session_state.page == k else "secondary",
-            )
+    with st.container(key="nav"):
+        marca, *botones = st.columns([5, 1, 1.3, 1.1, 1.1, 1.1], vertical_alignment="center")
+        marca.markdown('<div class="brand">Mercado laboral</div>', unsafe_allow_html=True)
+        for col, (k, etiqueta) in zip(botones, NAV):
+            col.button(etiqueta, key=f"nav_{k}", on_click=ir, args=(k,),
+                       type="primary" if st.session_state.page == k else "secondary")
+    st.markdown('<hr class="rule">', unsafe_allow_html=True)
 
 
-def tarjeta(clave, titulo, texto, boton, destino, pendiente=False):
-    with st.container(border=True):
-        marca = '<span class="is-pending"></span>' if pendiente else ""
-        tag = '<span class="tag">En desarrollo</span>' if pendiente else ""
-        st.markdown(f'{marca}<div class="card-title">{titulo}{tag}</div><div class="card-text">{texto}</div>',
+FILTROS = [("anio", "Año"), ("Mes Letras", "Mes"), ("departamento", "Departamento"),
+           ("sexo", "Sexo"), ("nivel_educativo", "Educación")]
+
+
+def barra_filtros(df_raw):
+    """Filtros horizontales; vacío = Todos. Devuelve el DataFrame filtrado."""
+    sel = {}
+    with st.container(key="filters"):
+        for col, (c, etiqueta) in zip(st.columns(len(FILTROS), gap="medium"), FILTROS):
+            opciones = MESES_ORDEN if c == "Mes Letras" else sorted(df_raw[c].dropna().unique().tolist(), key=str)
+            sel[c] = col.multiselect(etiqueta, opciones, placeholder="Todos", key=f"f_{c}")
+        df = df_raw
+        for c, valores in sel.items():
+            if valores:
+                df = df[df[c].isin(valores)]
+        st.markdown(f'<div class="aux">{fmt_n(len(df))} registros seleccionados de {fmt_n(len(df_raw))}</div>',
                     unsafe_allow_html=True)
-        st.button(boton, key=f"card_{clave}", on_click=ir, args=(destino,))
+    return df
 
 
-def cabecera(titulo, subtitulo):
-    st.markdown('<div class="eyebrow">Mercado laboral · GEIH</div>', unsafe_allow_html=True)
-    st.markdown(
-        f'<div class="page-title">{titulo}</div><div class="page-sub">{subtitulo}</div>',
-        unsafe_allow_html=True,
-    )
+def seccion(titulo, texto, items):
+    cols = st.columns([1.1, 1.5, 1.5], gap="large")
+    cols[0].markdown(f'<div class="sec-title">{titulo}</div><div class="sec-sub">{texto}</div>',
+                     unsafe_allow_html=True)
+    for col, (clave, cat, tit, txt, destino, pendiente) in zip(cols[1:], items):
+        with col:
+            tag = '<span class="tag">En desarrollo</span>' if pendiente else ""
+            st.markdown(f'<div class="item"><div class="item-cat">{cat}{tag}</div>'
+                        f'<div class="item-title">{tit}</div><div class="item-text">{txt}</div></div>',
+                        unsafe_allow_html=True)
+            with st.container(key=f"link_{clave}"):
+                st.button("Abrir sección →" if pendiente else "Explorar →", key=f"go_{clave}",
+                          on_click=ir, args=(destino,))
 
 
-def pagina_vacia(titulo, subtitulo):
-    cabecera(titulo, subtitulo)
-    st.markdown('<div class="canvas-empty">Esta sección está en desarrollo</div>', unsafe_allow_html=True)
+def encabezado(titulo, subtitulo):
+    st.markdown(f'<div class="page-title">{titulo}</div><div class="page-sub">{subtitulo}</div>',
+                unsafe_allow_html=True)
+
+
+def pie():
+    st.markdown('<div class="foot">Fuente: Gran Encuesta Integrada de Hogares (GEIH), DANE.</div>',
+                unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
@@ -693,98 +379,71 @@ def pagina_vacia(titulo, subtitulo):
 # ---------------------------------------------------------------------------
 def pagina_inicio(df, df_raw):
     a0, a1 = int(df_raw["anio"].min()), int(df_raw["anio"].max())
+    periodo = f"{a0}–{a1}" if a0 != a1 else f"{a0}"
+    c1, c2 = st.columns([1.7, 1], gap="large", vertical_alignment="bottom")
+    c1.markdown(f'<div class="eyebrow">Análisis descriptivo · GEIH {periodo}</div>'
+                '<div class="hero">Cómo se distribuyen<br>el empleo formal y los ingresos</div>',
+                unsafe_allow_html=True)
+    c2.markdown('<div class="hero-sub">Panorama de la población ocupada en Colombia. Compara formalidad e '
+                'ingresos por departamento, educación, sexo, contrato, sector y oficio.</div>',
+                unsafe_allow_html=True)
+    st.markdown('<div style="height:2.2rem"></div>', unsafe_allow_html=True)
+
     pf, pnf = pct_formal_no_formal(df)
     prom, med = promedio_mediana_ingreso(df)
+    with st.container(key="kpis"):
+        k = st.columns(4)
+        with k[0]: kpi(fmt_pct(pf), "Trabajo formal", "k-primary")
+        with k[1]: kpi(fmt_pct(pnf), "Trabajo no formal", "k-teal")
+        with k[2]: kpi(fmt_cop(prom), "Ingreso promedio", "k-primary")
+        with k[3]: kpi(fmt_cop(med), "Mediana", "k-accent")
 
-    st.markdown('<div class="eyebrow">GEIH · DANE · Análisis descriptivo</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="hero">Cómo se distribuyen el empleo formal y los ingresos en Colombia</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f'<div class="hero-sub">Explora la población ocupada según la GEIH entre {a0} y {a1}. '
-        'Compara formalidad e ingresos por territorio, educación, sexo, contrato, sector económico y otras dimensiones.</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        '<div class="kpi-strip">'
-        + kpi_block(f"{pf:.1%}", "Trabajo formal", "kpi-primary")
-        + kpi_block(f"{pnf:.1%}", "Trabajo no formal", "kpi-secondary")
-        + kpi_block(f"${prom:,.0f}", "Ingreso promedio", "kpi-primary")
-        + kpi_block(f"${med:,.0f}", "Mediana", "kpi-accent")
-        + '</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown('<div class="section-kicker">Análisis descriptivo</div>', unsafe_allow_html=True)
-    st.markdown('<div class="group-title">Dos perspectivas para entender el mercado laboral</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="group-sub">Selecciona un tablero para explorar los principales indicadores y sus desgloses.</div>',
-        unsafe_allow_html=True,
-    )
-
-    c1, c2 = st.columns(2, gap="large")
-    with c1:
-        tarjeta(
-            "formalidad",
-            "Formalidad laboral",
-            "Participación del empleo formal y no formal por departamento, tiempo, educación, "
-            "demografía, contrato, posición, lugar, sector y oficio.",
-            "Explorar →",
-            "formalidad",
-        )
-    with c2:
-        tarjeta(
-            "ingresos",
-            "Ingresos laborales",
-            "Promedio y mediana del ingreso laboral total, con comparaciones por las principales dimensiones de la GEIH.",
-            "Explorar →",
-            "ingresos",
-        )
-
-    st.markdown('<div class="section-kicker">Modelos</div>', unsafe_allow_html=True)
-    st.markdown('<div class="group-title">Nuevas herramientas analíticas</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="group-sub">Secciones preparadas para incorporar modelos predictivos.</div>',
-        unsafe_allow_html=True,
-    )
-
-    c3, c4 = st.columns(2, gap="large")
-    with c3:
-        tarjeta(
-            "salario",
-            "Proyección de salario",
-            "Estimar el ingreso esperado según las características observables del perfil.",
-            "Abrir →",
-            "salario",
-            pendiente=True,
-        )
-    with c4:
-        tarjeta(
-            "empleo",
-            "Probabilidad de empleo formal",
-            "Estimar la probabilidad de acceder a un empleo formal según el perfil.",
-            "Abrir →",
-            "empleo",
-            pendiente=True,
-        )
-
-    st.markdown('<div class="foot">Fuente: Gran Encuesta Integrada de Hogares (GEIH), DANE.</div>', unsafe_allow_html=True)
+    st.markdown('<div style="height:3.2rem"></div>', unsafe_allow_html=True)
+    seccion("Análisis descriptivo", "Explora cómo cambia el mercado laboral según las características de las personas ocupadas.", [
+        ("formalidad", "Descriptivo", "Formalidad laboral",
+         "Porcentaje de trabajo formal y no formal por departamento, tiempo, educación, demografía, contrato, sector y oficio.",
+         "formalidad", False),
+        ("ingresos", "Descriptivo", "Ingresos",
+         "Promedio y mediana del ingreso laboral total con los mismos desgloses.", "ingresos", False),
+    ])
+    st.markdown('<div style="height:2.4rem"></div>', unsafe_allow_html=True)
+    seccion("Modelos", "Herramientas de estimación para un perfil específico.", [
+        ("salario", "Modelo", "Proyección de salario",
+         "Estimar el ingreso esperado según el perfil de la persona.", "salario", True),
+        ("empleo", "Modelo", "Probabilidad de empleo formal",
+         "Estimar la probabilidad de conseguir un empleo formal según el perfil.", "empleo", True),
+    ])
+    pie()
 
 
 def pagina_formalidad(df):
-    cabecera("Formalidad laboral", "Proporción de personas ocupadas con empleo formal y no formal.")
-    kpis_formalidad(df)
+    pf, pnf = pct_formal_no_formal(df)
+    with st.container(key="kpis"):
+        c0, c1, c2 = st.columns([1.6, 1, 1], gap="large", vertical_alignment="center")
+        with c0: encabezado("Formalidad laboral", "Proporción de personas ocupadas con empleo formal y no formal.")
+        with c1: kpi(fmt_pct(pf), "Trabajo formal", "k-primary")
+        with c2: kpi(fmt_pct(pnf), "Trabajo no formal", "k-teal")
     st.markdown('<hr class="rule">', unsafe_allow_html=True)
     bloque_graficos(df, grafico_formalidad)
+    pie()
 
 
 def pagina_ingresos(df):
-    cabecera("Ingresos", "Promedio y mediana del ingreso laboral total.")
-    kpis_ingreso(df)
+    prom, med = promedio_mediana_ingreso(df)
+    with st.container(key="kpis"):
+        c0, c1, c2 = st.columns([1.6, 1, 1], gap="large", vertical_alignment="center")
+        with c0: encabezado("Ingresos", "Promedio y mediana del ingreso laboral total.")
+        with c1: kpi(fmt_cop(prom), "Ingreso promedio", "k-primary")
+        with c2: kpi(fmt_cop(med), "Mediana", "k-accent")
     st.markdown('<hr class="rule">', unsafe_allow_html=True)
     bloque_graficos(df, grafico_ingreso)
+    pie()
+
+
+def pagina_vacia(titulo, subtitulo):
+    encabezado(titulo, subtitulo)
+    st.markdown('<div class="canvas-empty">Esta sección está en desarrollo</div>', unsafe_allow_html=True)
+    pie()
 
 
 # ---------------------------------------------------------------------------
@@ -795,28 +454,9 @@ if "page" not in st.session_state:
     st.session_state.page = "inicio"
 
 df_raw = load_data(DATA_PATH)
-
-anios = sorted(df_raw["anio"].unique())
-
-with st.expander("Filtros de análisis", expanded=True):
-    f1, f2, f3 = st.columns([1, 1, 2], gap="medium")
-    with f1:
-        anios_sel = st.multiselect("Año", anios, default=anios)
-    with f2:
-        meses_sel = st.multiselect("Mes", MESES_ORDEN, default=MESES_ORDEN)
-    with f3:
-        st.caption("Cobertura seleccionada")
-        st.markdown(
-            f"**{len(df_raw[df_raw['anio'].isin(anios_sel) & df_raw['Mes Letras'].isin(meses_sel)]):,}** "
-            f"registros de **{len(df_raw):,}**",
-        )
-
-df = df_raw[
-    df_raw["anio"].isin(anios_sel)
-    & df_raw["Mes Letras"].isin(meses_sel)
-]
-
 barra_nav()
+df = barra_filtros(df_raw)
+
 pagina = st.session_state.page
 if pagina == "inicio":
     pagina_inicio(df, df_raw)
