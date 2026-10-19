@@ -52,13 +52,23 @@ h1,h2,h3 { font-family:'$F_DISPLAY',sans-serif; }
 /* Navegación superior */
 .brand { font-family:'$F_DISPLAY',sans-serif; font-weight:700; font-size:1.1rem; color:$PRIMARY; letter-spacing:-0.01em; padding-top:.3rem; }
 .st-key-nav button { width:auto; min-height:0; padding:.35rem 0 .45rem; background:transparent; border:none;
-    border-bottom:2px solid transparent; border-radius:0; color:$MUTED; font-weight:500; font-size:.95rem;
+    border-bottom:2px solid transparent; border-radius:0; color:$MUTED; font-weight:500; font-size:.88rem; white-space:nowrap;
     transition:color .15s, border-color .15s; }
 .st-key-nav button:hover { color:$TEXT; background:transparent; border-bottom-color:$BORDER; }
 .st-key-nav button[kind="primary"], .st-key-nav button[data-testid="stBaseButton-primary"],
 .st-key-nav button[kind="primary"]:hover, .st-key-nav button[data-testid="stBaseButton-primary"]:hover {
     color:$PRIMARY; font-weight:600; border-bottom-color:$PRIMARY; background:transparent; }
 .st-key-nav button p, div[class*="st-key-link_"] button p { color:inherit; font-size:inherit; font-weight:inherit; }
+
+/* Disposición del menú: marca a la izquierda, secciones a la derecha */
+.st-key-nav { flex-direction:row !important; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.3rem 2rem; }
+.st-key-nav > * { width:auto !important; min-width:0; flex:0 0 auto; }
+.st-key-nav > :last-child { flex:1 1 auto !important; }
+.st-key-nav [data-testid="stHorizontalBlock"] { flex-wrap:nowrap; align-items:center; gap:1.4rem; }
+.st-key-nav [data-testid="stColumn"] { flex:0 0 auto !important; width:auto !important; min-width:0 !important; }
+.st-key-nav_brand [data-testid="stHorizontalBlock"] { gap:.4rem; }
+.st-key-nav_items [data-testid="stHorizontalBlock"] { justify-content:flex-end; }
+.st-key-nav .brand { white-space:nowrap; padding-top:0; }
 
 /* Enlaces de texto (Explorar →) */
 div[class*="st-key-link_"] button { width:auto; min-height:0; padding:0; background:transparent; border:none;
@@ -119,7 +129,6 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; }
 .stApp:has(.cover-content) { background-image:url("$MAPA_URI"); background-repeat:no-repeat;
     background-position:center; background-size:contain; }
 .cover-content { text-align:center; padding-top:max(6vh, calc(50vh - 16rem)); }
-.cover-eyebrow { color:$SECONDARY; font-weight:500; font-size:1.15rem; margin-bottom:1.2rem; }
 .cover-title { font-family:'$F_DISPLAY',sans-serif; font-size:clamp(3rem, 7vw, 6.6rem); font-weight:600; line-height:1.02; letter-spacing:-0.035em;
     text-shadow:0 0 28px rgba(248,250,252,.95), 0 0 10px rgba(248,250,252,.95); }
 .cover-sub { color:$MUTED; font-size:clamp(1.15rem, 1.7vw, 1.65rem); line-height:1.45; margin:1.5rem auto 0; max-width:680px;
@@ -131,12 +140,11 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; }
 .st-key-cover_cta button:hover { background:$SECONDARY; color:#FFFFFF; }
 .st-key-cover_cta button p { color:inherit; font-size:1.15rem; font-weight:500; }
 
-/* Ícono de inicio, separado del menú */
-.st-key-nav_home { border-left:1px solid $BORDER; padding-left:1rem; }
-.st-key-nav_home button { color:$MUTED; }
-.st-key-nav_home button:hover { color:$PRIMARY; }
-.st-key-nav_home button p { display:none; }
-.st-key-nav_home button span[data-testid="stIconMaterial"] { font-size:1.4rem; }
+/* Ícono de inicio junto a la marca */
+.st-key-nav_inicio button { color:$PRIMARY; }
+.st-key-nav_inicio button:hover { color:$SECONDARY; }
+.st-key-nav_inicio button p { display:none; }
+.st-key-nav_inicio button span[data-testid="stIconMaterial"] { font-size:1.45rem; }
 
 /* Secciones de modelos: variables, ejecución y resultados */
 div[class*="st-key-panel_vars_"], div[class*="st-key-panel_result_"] { border:1px solid $BORDER; border-radius:10px; padding:1.5rem; }
@@ -160,9 +168,7 @@ div[class*="st-key-predecir_"] button p { color:inherit; font-size:inherit; font
 
 @media (max-width:900px) {
     .block-container { padding:1rem 1rem 2rem; }
-    .st-key-nav [data-testid="stHorizontalBlock"] { flex-wrap:wrap; gap:.2rem 1.3rem; }
-    .st-key-nav [data-testid="stColumn"] { min-width:0 !important; flex:0 0 auto !important; width:auto !important; }
-    .st-key-nav [data-testid="stColumn"]:first-child { flex:1 0 100% !important; }
+    .st-key-nav_items [data-testid="stHorizontalBlock"] { flex-wrap:wrap; gap:.3rem 1.1rem; justify-content:flex-start; }
     .st-key-kpis [data-testid="stColumn"]:not(:first-child) { border-left:none; padding-left:0; }
 }
 </style>
@@ -393,20 +399,22 @@ def ir(pagina):
     st.session_state.page = pagina
 
 
-NAV = [("formalidad", "Formalidad"), ("ingresos", "Ingresos"),
-       ("salario", "Salarios"), ("empleo", "Empleo")]
+NAV = [("formalidad", "Análisis descriptivo formalidad"), ("ingresos", "Análisis descriptivo ingresos"),
+       ("salario", "Modelo predictivo ingresos"), ("empleo", "Modelo predictivo formalidad")]
 
 
 def barra_nav():
     with st.container(key="nav"):
-        marca, *botones, inicio = st.columns([5.5, 1.3, 1.1, 1.1, 1.1, 0.5], vertical_alignment="center")
-        marca.markdown('<div class="brand">Mercado laboral</div>', unsafe_allow_html=True)
-        for col, (k, etiqueta) in zip(botones, NAV):
-            col.button(etiqueta, key=f"nav_{k}", on_click=ir, args=(k,),
-                       type="primary" if st.session_state.page == k else "secondary")
-        with inicio, st.container(key="nav_home"):
-            st.button("Inicio", key="nav_inicio", icon=":material/home:", help="Ir a la portada",
-                      on_click=ir, args=("inicio",))
+        with st.container(key="nav_brand"):
+            icono, marca = st.columns([1, 6], vertical_alignment="center")
+            with icono:
+                st.button("Inicio", key="nav_inicio", icon=":material/home:", help="Ir a la portada",
+                          on_click=ir, args=("inicio",))
+            marca.markdown('<div class="brand">Mercado laboral</div>', unsafe_allow_html=True)
+        with st.container(key="nav_items"):
+            for col, (k, etiqueta) in zip(st.columns(len(NAV), vertical_alignment="center"), NAV):
+                col.button(etiqueta, key=f"nav_{k}", on_click=ir, args=(k,),
+                           type="primary" if st.session_state.page == k else "secondary")
     st.markdown('<hr class="rule">', unsafe_allow_html=True)
 
 
@@ -504,7 +512,6 @@ def pagina_inicio():
     """Portada: pantalla separada, sin navegación ni asistente. El mapa es el fondo (ver CSS)."""
     st.markdown(
         '<div class="cover-content">'
-        '<div class="cover-eyebrow">Estadística descriptiva · GEIH</div>'
         '<div class="cover-title">Mercado laboral<br>en Colombia</div>'
         '<div class="cover-sub">Una solución para tomar decisiones sobre el empleo</div>'
         '</div>', unsafe_allow_html=True)
@@ -520,7 +527,7 @@ def pagina_formalidad(df_raw):
     pf, pnf = pct_formal_no_formal(df)
     with cabecera, st.container(key="kpis"):
         c0, c1, c2 = st.columns([2.2, 1, 1], gap="medium", vertical_alignment="center")
-        with c0: encabezado("Formalidad laboral", "Proporción de personas ocupadas con empleo formal y no formal.")
+        with c0: encabezado("Análisis descriptivo formalidad", "Proporción de personas ocupadas con empleo formal y no formal.")
         with c1: kpi(fmt_pct(pf), "Trabajo formal", "k-primary")
         with c2: kpi(fmt_pct(pnf), "Trabajo no formal", "k-teal")
     bloque_graficos(df, grafico_formalidad)
@@ -533,7 +540,7 @@ def pagina_ingresos(df_raw):
     prom, med = promedio_mediana_ingreso(df)
     with cabecera, st.container(key="kpis"):
         c0, c1, c2 = st.columns([2.2, 1, 1], gap="medium", vertical_alignment="center")
-        with c0: encabezado("Ingresos", "Promedio y mediana del ingreso laboral total.")
+        with c0: encabezado("Análisis descriptivo ingresos", "Promedio y mediana del ingreso laboral total.")
         with c1: kpi(fmt_cop(prom), "Ingreso promedio", "k-primary")
         with c2: kpi(fmt_cop(med), "Mediana", "k-accent")
     bloque_graficos(df, grafico_ingreso)
@@ -603,10 +610,10 @@ elif pagina == "formalidad":
 elif pagina == "ingresos":
     pagina_ingresos(df_raw)
 elif pagina == "salario":
-    pagina_modelo("salario", "Proyección de salario",
+    pagina_modelo("salario", "Modelo predictivo ingresos",
                   "Estimación del ingreso laboral según el perfil de la persona.", "la proyección de salario")
 else:
-    pagina_modelo("empleo", "Probabilidad de empleo formal",
+    pagina_modelo("empleo", "Modelo predictivo formalidad",
                   "Estimación de la probabilidad de conseguir un empleo formal.", "la probabilidad de empleo formal")
 
 if pagina != "inicio":
