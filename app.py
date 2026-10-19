@@ -42,7 +42,7 @@ CSS = Template("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@500;600;700&display=swap');
 html, body, [class*="css"], .stApp { font-family:'$F_BODY',sans-serif; color:$TEXT; }
 .stApp { background:$BG; }
-.block-container { max-width:1440px; padding:1.2rem 2.4rem 3rem; }
+.block-container { max-width:1440px; padding:.8rem 2.4rem 2rem; }
 header[data-testid="stHeader"] { background:transparent; }
 footer { visibility:hidden; }
 h1,h2,h3 { font-family:'$F_DISPLAY',sans-serif; }
@@ -67,16 +67,16 @@ div[class*="st-key-link_"] button:hover { color:$SECONDARY; background:transpare
 
 /* Filtros compactos */
 .st-key-filters label p { font-size:.78rem; color:$MUTED; font-weight:500; }
-.st-key-filters [data-baseweb="select"] > div { background:$SURFACE; border:1px solid $BORDER; border-radius:8px; min-height:38px; font-size:.88rem; }
+.st-key-filters [data-baseweb="select"] > div { background:$SURFACE !important; border:1px solid $BORDER; border-radius:8px; min-height:34px; font-size:.84rem; }
 .st-key-filters [data-baseweb="tag"] { background:#E4EEF1; color:$PRIMARY; border-radius:6px; }
-.aux { color:$MUTED; font-size:.84rem; margin:.3rem 0 1rem; }
+.aux { color:$MUTED; font-size:.8rem; text-align:right; }
 
 /* Tipografía editorial */
-.page-title { font-family:'$F_DISPLAY',sans-serif; font-size:2.2rem; font-weight:600; letter-spacing:-0.02em; margin-top:1.4rem; }
-.page-sub { color:$MUTED; font-size:1.02rem; margin-top:.3rem; max-width:480px; }
+.page-title { font-family:'$F_DISPLAY',sans-serif; font-size:1.6rem; font-weight:600; letter-spacing:-0.02em; }
+.page-sub { color:$MUTED; font-size:.88rem; margin-top:.1rem; }
 .tag { color:$ACCENT; font-size:.78rem; font-weight:500; border:1px solid $ACCENT; border-radius:999px; padding:0 .5rem; margin-left:.6rem; }
-.chart-title { font-family:'$F_DISPLAY',sans-serif; font-size:1rem; font-weight:600; margin:1.6rem 0 .2rem; }
-.rule { border:none; border-top:1px solid $BORDER; margin:1rem 0 1.2rem; }
+.chart-title { font-family:'$F_DISPLAY',sans-serif; font-size:.95rem; font-weight:600; margin:.9rem 0 0; }
+.rule { border:none; border-top:1px solid $BORDER; margin:.4rem 0 .8rem; }
 .foot { border-top:1px solid $BORDER; color:$MUTED; font-size:.82rem; margin-top:4rem; padding-top:1rem; }
 .canvas-empty { min-height:460px; border:1px dashed $BORDER; border-radius:10px; display:flex; align-items:center; justify-content:center; color:$MUTED; font-size:.95rem; margin-top:1.5rem; }
 
@@ -84,6 +84,7 @@ div[class*="st-key-link_"] button:hover { color:$SECONDARY; background:transpare
 .kpi-v { font-family:'$F_BODY',sans-serif; font-size:2.4rem; font-weight:600; line-height:1.1; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; }
 .kpi-l { color:$MUTED; font-size:.88rem; margin-top:.2rem; }
 .k-primary { color:$PRIMARY; } .k-teal { color:$SECONDARY; } .k-accent { color:$ACCENT; }
+.st-key-kpis .kpi-v { font-size:1.9rem; } .st-key-kpis .kpi-l { font-size:.82rem; margin-top:0; }
 .st-key-kpis [data-testid="stColumn"]:not(:first-child), .st-key-kpis [data-testid="column"]:not(:first-child) {
     border-left:1px solid $BORDER; padding-left:1.5rem; }
 
@@ -94,6 +95,7 @@ div[class*="st-key-link_"] button:hover { color:$SECONDARY; background:transpare
 .stTabs [aria-selected="true"] { color:$TEXT; font-weight:600; }
 .stTabs [data-baseweb="tab-highlight"] { background:$PRIMARY; height:2px; }
 .stTabs [data-baseweb="tab-border"] { background:transparent; }
+.stTabs [data-baseweb="tab-panel"] { padding-top:.2rem; }
 
 /* Asistente virtual: panel de chat fijo a la derecha, visible en todas las secciones */
 [data-testid="stToolbar"] { display:none; }
@@ -241,7 +243,7 @@ PLOTLY_LAYOUT = dict(
 PLOT_CONFIG = {"displayModeBar": False}
 
 
-def estilizar_figura(fig, altura, pct, horizontal, apilado=False, margen_der=16):
+def estilizar_figura(fig, altura, pct, horizontal, apilado=False, margen_der=16, xmax=None):
     fig.update_layout(**PLOTLY_LAYOUT)
     fig.update_layout(height=altura, barmode="stack" if apilado else "group",
                       margin=dict(t=34, b=8, l=4, r=margen_der))
@@ -250,6 +252,8 @@ def estilizar_figura(fig, altura, pct, horizontal, apilado=False, margen_der=16)
                  tickprefix="" if pct else "$")
     if pct and horizontal:
         valor["range"] = [0, 1]
+    elif xmax and horizontal:
+        valor["range"] = [0, xmax]
     categoria = dict(showgrid=False, zeroline=False, showline=False, ticks="", type="category",
                      automargin=True, tickfont=dict(size=12, color=TEXT))
     if horizontal:
@@ -261,14 +265,14 @@ def estilizar_figura(fig, altura, pct, horizontal, apilado=False, margen_der=16)
     return fig
 
 
-def grafico_barras(d, dim, series, pct, apilado=False, marcador=None, key=None):
+def grafico_barras(d, dim, series, pct, apilado=False, marcador=None, key=None, xmax=None, altura=None, leyenda=True):
     """Barras horizontales (ranking). series: (nombre, columna, color, color_texto)."""
     cat = d[dim].astype(str)
     fmt, pre = ".1%" if pct else ",.0f", "" if pct else "$"
     fig = go.Figure()
     for nombre, col, color, txt in series:
         fig.add_bar(
-            name=nombre, y=cat, x=d[col], orientation="h", marker=dict(color=color),
+            name=nombre, y=cat, x=d[col], orientation="h", marker=dict(color=color), showlegend=leyenda,
             customdata=d["n"], texttemplate=f"{pre}%{{x:{fmt}}}", cliponaxis=False,
             textposition="inside" if apilado else "outside", textfont=dict(color=txt, size=11),
             hovertemplate=f"<b>%{{y}}</b><br>{nombre}: {pre}%{{x:{fmt}}}<br>Registros: %{{customdata:,}}<extra></extra>",
@@ -276,11 +280,11 @@ def grafico_barras(d, dim, series, pct, apilado=False, marcador=None, key=None):
     if marcador:
         nombre, col, color = marcador
         fig.add_scatter(
-            name=nombre, y=cat, x=d[col], mode="markers", customdata=d["n"],
+            name=nombre, y=cat, x=d[col], mode="markers", customdata=d["n"], showlegend=leyenda,
             marker=dict(symbol="diamond", size=9, color=color, line=dict(color=SURFACE, width=1)),
             hovertemplate=f"<b>%{{y}}</b><br>{nombre}: {pre}%{{x:{fmt}}}<extra></extra>",
         )
-    estilizar_figura(fig, max(240, 30 * len(d) + 90), pct, True, apilado, margen_der=16 if pct else 70)
+    estilizar_figura(fig, altura or max(170, 24 * len(d) + 70), pct, True, apilado, margen_der=16 if pct else 70, xmax=xmax)
     st.plotly_chart(fig, config=PLOT_CONFIG, key=key)
 
 
@@ -298,8 +302,24 @@ def grafico_tendencia(d, dim, series, pct, key=None):
             line=dict(color=color, width=2), marker=dict(size=6, color=color),
             hovertemplate=f"<b>%{{x}}</b><br>{nombre}: {pre}%{{y:{fmt}}}<extra></extra>",
         )
-    estilizar_figura(fig, 320, pct, False, margen_der=40)
+    estilizar_figura(fig, 300, pct, False, margen_der=40)
     st.plotly_chart(fig, config=PLOT_CONFIG, key=key)
+
+
+def ranking(d, dim, series, pct, apilado=False, marcador=None, key=None, completo=False):
+    """Ranking horizontal. Con ancho completo y muchas categorías se reparte en dos columnas (misma escala)."""
+    cols = [s[1] for s in series] + ([marcador[1]] if marcador else [])
+    xmax = None if pct else float(d[cols].max().max()) * 1.2
+    if completo and len(d) > 16:
+        k = (len(d) + 1) // 2
+        alto = 24 * k + 70
+        izq, der = st.columns(2, gap="large")
+        with izq:  # d va de menor a mayor: la mitad alta queda a la izquierda
+            grafico_barras(d.iloc[len(d) - k:], dim, series, pct, apilado, marcador, f"{key}_a", xmax, alto)
+        with der:
+            grafico_barras(d.iloc[:len(d) - k], dim, series, pct, apilado, marcador, f"{key}_b", xmax, alto, leyenda=False)
+    else:
+        grafico_barras(d, dim, series, pct, apilado, marcador, key, xmax)
 
 
 def titulo_grafico(texto):
@@ -310,7 +330,7 @@ def sin_datos():
     st.caption("No hay registros para los filtros seleccionados.")
 
 
-def grafico_formalidad(df, dim, titulo, tendencia=False):
+def grafico_formalidad(df, dim, titulo, tendencia=False, completo=False):
     titulo_grafico(titulo)
     if df.empty:
         return sin_datos()
@@ -320,10 +340,10 @@ def grafico_formalidad(df, dim, titulo, tendencia=False):
     if tendencia:
         grafico_tendencia(d, dim, [s[:3] for s in series], True, key=f"ch_formalidad_{dim}")
     else:
-        grafico_barras(d.sort_values("mean"), dim, series, True, apilado=True, key=f"ch_formalidad_{dim}")
+        ranking(d.sort_values("mean"), dim, series, True, apilado=True, key=f"ch_formalidad_{dim}", completo=completo)
 
 
-def grafico_ingreso(df, dim, titulo, tendencia=False):
+def grafico_ingreso(df, dim, titulo, tendencia=False, completo=False):
     titulo_grafico(titulo)
     if df.empty:
         return sin_datos()
@@ -332,8 +352,8 @@ def grafico_ingreso(df, dim, titulo, tendencia=False):
         grafico_tendencia(d, dim, [("Promedio", "mean", PRIMARY), ("Mediana", "median", ACCENT)],
                           False, key=f"ch_ingreso_{dim}")
     else:
-        grafico_barras(d.sort_values("mean"), dim, [("Promedio", "mean", PRIMARY, MUTED)], False,
-                       marcador=("Mediana", "median", ACCENT), key=f"ch_ingreso_{dim}")
+        ranking(d.sort_values("mean"), dim, [("Promedio", "mean", PRIMARY, MUTED)], False,
+                marcador=("Mediana", "median", ACCENT), key=f"ch_ingreso_{dim}", completo=completo)
 
 
 # Organización por pestañas: cada fila es una lista de gráficos que se muestran lado a lado
@@ -355,10 +375,10 @@ def bloque_graficos(df, fn):
     for tab, (_, filas) in zip(tabs, GRUPOS):
         with tab:
             for fila in filas:
-                cols = st.columns(len(fila), gap="large")
+                cols = [st.container()] if len(fila) == 1 else st.columns(len(fila), gap="large")
                 for col, (dim, tit, opts) in zip(cols, fila):
                     with col:
-                        fn(df, dim, tit, **opts)
+                        fn(df, dim, tit, completo=len(fila) == 1, **opts)
 
 
 # ---------------------------------------------------------------------------
@@ -395,18 +415,20 @@ FILTROS = [("anio", "Año"), ("Mes Letras", "Mes"), ("departamento", "Departamen
 
 
 def barra_filtros(df_raw, clave):
-    """Filtros horizontales; vacío = Todos. Devuelve el DataFrame filtrado."""
+    """Filtros horizontales y compactos; vacío = Todos. Devuelve el DataFrame filtrado."""
     sel = {}
     with st.container(key="filters"):
-        for col, (c, etiqueta) in zip(st.columns(len(FILTROS), gap="medium"), FILTROS):
+        cols = st.columns([1, 1, 1.2, 1, 1.2, 1.1], gap="small", vertical_alignment="center")
+        for col, (c, etiqueta) in zip(cols, FILTROS):
             opciones = MESES_ORDEN if c == "Mes Letras" else sorted(df_raw[c].dropna().unique().tolist(), key=str)
-            sel[c] = col.multiselect(etiqueta, opciones, placeholder="Todos", key=f"f_{clave}_{c}")
+            sel[c] = col.multiselect(etiqueta, opciones, placeholder=f"{etiqueta}: todos",
+                                     key=f"f_{clave}_{c}", label_visibility="collapsed")
         df = df_raw
         for c, valores in sel.items():
             if valores:
                 df = df[df[c].isin(valores)]
-        st.markdown(f'<div class="aux">{fmt_n(len(df))} registros seleccionados de {fmt_n(len(df_raw))}</div>',
-                    unsafe_allow_html=True)
+        cols[-1].markdown(f'<div class="aux">{fmt_n(len(df))} de {fmt_n(len(df_raw))} registros</div>',
+                          unsafe_allow_html=True)
     return df
 
 
@@ -494,11 +516,10 @@ def pagina_inicio():
 
 def pagina_formalidad(df_raw):
     cabecera = st.container()
-    st.markdown('<hr class="rule">', unsafe_allow_html=True)
     df = barra_filtros(df_raw, "formalidad")
     pf, pnf = pct_formal_no_formal(df)
     with cabecera, st.container(key="kpis"):
-        c0, c1, c2 = st.columns([1.6, 1, 1], gap="large", vertical_alignment="center")
+        c0, c1, c2 = st.columns([2.2, 1, 1], gap="medium", vertical_alignment="center")
         with c0: encabezado("Formalidad laboral", "Proporción de personas ocupadas con empleo formal y no formal.")
         with c1: kpi(fmt_pct(pf), "Trabajo formal", "k-primary")
         with c2: kpi(fmt_pct(pnf), "Trabajo no formal", "k-teal")
@@ -508,11 +529,10 @@ def pagina_formalidad(df_raw):
 
 def pagina_ingresos(df_raw):
     cabecera = st.container()
-    st.markdown('<hr class="rule">', unsafe_allow_html=True)
     df = barra_filtros(df_raw, "ingresos")
     prom, med = promedio_mediana_ingreso(df)
     with cabecera, st.container(key="kpis"):
-        c0, c1, c2 = st.columns([1.6, 1, 1], gap="large", vertical_alignment="center")
+        c0, c1, c2 = st.columns([2.2, 1, 1], gap="medium", vertical_alignment="center")
         with c0: encabezado("Ingresos", "Promedio y mediana del ingreso laboral total.")
         with c1: kpi(fmt_cop(prom), "Ingreso promedio", "k-primary")
         with c2: kpi(fmt_cop(med), "Mediana", "k-accent")
