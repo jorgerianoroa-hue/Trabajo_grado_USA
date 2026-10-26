@@ -1182,6 +1182,8 @@ EDAD_AVISO = {"Normalista": 19, "Técnica profesional": 18, "Tecnológica": 18, 
 ESTADOS_CIVILES = ["Soltero(a)", "Unión libre < 2 años", "Unión libre >= 2 años", "Casado(a)",
                    "Separado(a) / divorciado(a)", "Viudo(a)"]
 SIN_TITULO = "Sin título"
+EDADES = list(range(15, 86))                                                         # R-01: 15 a 85 años
+MINUTOS = [*range(0, 61), *range(65, 181, 5), *range(190, 301, 10)]                  # R-11: 0 a 300 minutos (más finos en los valores usuales)
 AREAS = [
     "00 PROGRAMAS Y CERTIFICACIONES GENÉRICOS", "01 EDUCACIÓN", "02 ARTES Y HUMANIDADES",
     "03 CIENCIAS SOCIALES, PERIODISMO E INFORMACIÓN", "04 ADMINISTRACIÓN DE EMPRESAS Y DERECHO",
@@ -1446,7 +1448,7 @@ def controles_paso(paso, sectores, sec_o, cat):
     nivel = r["nivel_educativo"]
     if paso == 0:
         pregunta("¿Cuántos años tienes?", "Entre 15 y 85 años.")
-        st.number_input("Edad", min_value=15, max_value=85, value=None, step=1, placeholder="Ej. 29", key="m_edad", label_visibility="collapsed")
+        st.selectbox("Edad", EDADES, index=None, placeholder="Selecciona o escribe tu edad", key="m_edad", label_visibility="collapsed")
         if hecho("edad"):
             pregunta("¿Cuál es tu sexo?")
             st.radio("Sexo", cat["sexo"], index=None, horizontal=True, key="m_sexo", label_visibility="collapsed")
@@ -1504,8 +1506,9 @@ def controles_paso(paso, sectores, sec_o, cat):
             st.selectbox("Medio", MEDIOS, index=None, placeholder="Selecciona una opción", key="m_medio", label_visibility="collapsed")
         if hecho("lugar_trabajo") and hecho("tipo_contrato") and hecho("medio_consiguio_empleo"):
             pregunta("¿Cuántos minutos tardas en llegar al trabajo?", "Solo ida, entre 0 y 300. Si trabajas en tu vivienda, es 0.")
-            st.number_input("Minutos de desplazamiento", min_value=0, max_value=300, value=None, step=5, placeholder="Ej. 45",
-                            key="m_min", label_visibility="collapsed")
+            st.selectbox("Minutos de desplazamiento", MINUTOS, index=None, placeholder="Selecciona o escribe los minutos",
+                         format_func=lambda v: "0 min (no me desplazo)" if v == 0 else f"{v} min", key="m_min", label_visibility="collapsed")
+            nota("Si tu tiempo exacto no aparece, elige el más cercano.")
 
 
 def resultado_modelo(resp):
