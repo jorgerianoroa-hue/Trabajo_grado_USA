@@ -4,8 +4,14 @@ Ejecutar con:  streamlit run app.py
 """
 
 import base64
+import hashlib
+import io
+import json
+import os
 import re
 import time
+import unicodedata
+from datetime import date
 from html import escape
 from pathlib import Path
 from string import Template
@@ -288,6 +294,8 @@ div[class*="st-key-sug_"] button { width:100%; min-height:0; justify-content:fle
     border:none; border-top:1px solid $HAIRLINE; border-radius:0; padding:14px 4px; color:$TEXT; font-size:14px; font-weight:400; transition:background .12s; }
 div[class*="st-key-sug_"] button:hover { background:$FIELD; color:$TEXT; }
 div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-align:left; }
+.st-key-chat_cv [data-testid="stFileUploaderDropzone"] { padding:8px 12px; background:$FIELD; border:1px dashed $BORDER; border-radius:10px; }
+.st-key-chat_cv label p, .st-key-chat_cv small { font-size:12px; color:$MUTED; }
 .st-key-chat_reset button { width:auto; min-height:0; padding:0; background:transparent; border:none; color:$MUTED; font-size:13px; }
 .st-key-chat_reset button:hover { color:$PRIMARY; background:transparent; text-decoration:underline; }
 @media (min-width:1100px) { .block-container:has(.st-key-chat):not(:has(.cover-content)) { max-width:none; padding-right:412px; } }
@@ -299,6 +307,8 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 .sv-step b { display:block; font-size:11px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; }
 .sv-step.done { border-top-color:$NOFORMAL; color:$MUTED2; }
 .sv-step.on { border-top-color:$PRIMARY_DARK; color:$PRIMARY_DARK; font-weight:600; }
+.sv-cv { background:#FFF4E6; color:$ACCENT_TEXT; border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.4; }
+.st-key-sv_editar_todo_btn button, .st-key-sv_abrir_cv_btn button { padding:0; min-height:0; font-size:13px; color:$PRIMARY; }
 .sv-tip { background:$TINT; color:$TEAL_TEXT; border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.4; }
 .sv-title { font-size:26px; font-weight:600; letter-spacing:-0.01em; line-height:1.2; margin-top:8px; }
 .sv-lead { font-size:14px; color:$MUTED; margin-top:4px; }
@@ -987,7 +997,7 @@ SUGERENCIAS = {
                  "¿Cómo ha cambiado el ingreso por año?",
                  "¿Qué sector tiene mayor ingreso promedio?"],
 }
-SUGERENCIAS["modelo"] = ["¿Qué significa la probabilidad de empleo formal?",
+SUGERENCIAS["modelo"] = ["Quiero llenar la encuesta con mi hoja de vida", "¿Qué significa la probabilidad de empleo formal?",
                          "¿Por qué me piden estos datos?",
                          "¿Cómo interpreto el rango del 80%?"]
 SUGERENCIAS_BASE = ["¿Qué datos puedo consultar aquí?", "¿Qué significa trabajo formal?"]
@@ -995,6 +1005,9 @@ SUGERENCIAS_BASE = ["¿Qué datos puedo consultar aquí?", "¿Qué significa tra
 
 def responder(pregunta, pagina):
     """Punto de integración del asistente: reemplazar por la llamada al modelo."""
+    if "hoja de vida" in pregunta.lower():
+        return ("Con gusto. Sube tu hoja de vida (PDF o Word) con el botón de arriba, o pega su texto aquí mismo. "
+                "Completo la encuesta con lo que encuentre y solo te pregunto lo que falte.")
     return ("Todavía no puedo responder preguntas. Estoy en desarrollo y pronto podré "
             "ayudarte a interpretar los datos de esta sección.")
 
@@ -1044,15 +1057,29 @@ def asistente():
         with st.container(key="chat_close"):
             st.button("✕", key="chat_close_btn", on_click=alternar_chat, help="Cerrar el asistente")
         st.markdown('<div><span class="chat-title">Asistente virtual</span><span class="tag">En desarrollo</span>'
-                    '<div class="chat-sub">Pregunta sobre los datos de esta sección.</div></div>',
+                    '<div class="chat-sub">Pregunta sobre los datos o sube tu hoja de vida para llenar la encuesta.</div></div>',
                     unsafe_allow_html=True)
         mensajes = st.container(key="chat_msgs", border=False)
         if len(st.session_state.chat) == 1:
             for i, q in enumerate(SUGERENCIAS.get(st.session_state.page, SUGERENCIAS_BASE)):
                 with st.container(key=f"sug_{i}"):
                     st.button(q, key=f"sug_btn_{i}", on_click=enviar, args=(q,))
-        pregunta = st.chat_input("Escribe tu pregunta", key="chat_input")
-        if pregunta:
+        if "cv_n" not in st.session_state:
+            st.session_state["cv_n"] = 0
+        with st.container(key="chat_cv"):
+            archivo = st.file_uploader("Sube tu hoja de vida (PDF o Word) y completo la encuesta por ti", type=["pdf", "docx", "txt"],
+                                       key=f"cv_up_{st.session_state['cv_n']}", help="Solo se usa para llenar la encuesta; la aplicación no la guarda.")
+        pregunta = st.chat_input("Escribe tu pregunta o pega el texto de tu hoja de vida", key="chat_input")
+        if archivo is not None:
+            with st.spinner("Leyendo tu hoja de vida..."):
+                ok = procesar_cv(archivo.name, leer_archivo(archivo))
+            st.session_state["cv_n"] += 1
+            st.session_state["chat_abierto"] = True
+            st.rerun()
+        elif pregunta and len(pregunta) > 400:          # texto largo pegado en el chat = hoja de vida
+            procesar_cv("texto pegado", pregunta)
+            st.rerun()
+        elif pregunta:
             enviar(pregunta)
         if len(st.session_state.chat) > 1:
             with st.container(key="chat_reset"):
@@ -1412,18 +1439,56 @@ def predecir_perfil(payload):
     st.session_state["m_resultado"] = {"payload": payload, "respuesta": llamar_modelo(payload)}
 
 
+def paso_visible(i):
+    """Con hoja de vida solo se recorren los pasos que tienen preguntas sin responder (a menos que se pida editar todo)."""
+    ss = st.session_state
+    if not ss.get("m_cv_campos") or ss.get("m_editar_todo"):
+        return True
+    return any(c in ss.get("m_cv_faltan", []) for c in PASOS[i][3])
+
+
 def paso_mas():
-    st.session_state["_subir"] = True
-    st.session_state["m_paso"] = min(st.session_state.get("m_paso", 0) + 1, len(PASOS) - 1)
+    ss = st.session_state
+    ss["_subir"] = True
+    i = ss.get("m_paso", 0) + 1
+    while i < len(PASOS) - 1 and not paso_visible(i):
+        i += 1
+    ss["m_paso"] = min(i, len(PASOS) - 1)
 
 
 def paso_menos():
-    st.session_state["_subir"] = True
-    st.session_state["m_paso"] = max(st.session_state.get("m_paso", 0) - 1, 0)
+    ss = st.session_state
+    ss["_subir"] = True
+    i = ss.get("m_paso", 0) - 1
+    while i > 0 and not paso_visible(i):
+        i -= 1
+    ss["m_paso"] = max(i, 0)
+
+
+def siguiente_visible_existe(paso):
+    return any(paso_visible(i) for i in range(paso + 1, len(PASOS)))
+
+
+def hay_anterior_visible(paso):
+    return any(paso_visible(i) for i in range(0, paso))
+
+
+def editar_respuestas():
+    if st.session_state.get("m_cv_campos"):
+        st.session_state["m_editar_todo"] = True
+    ir_vista("preguntas", 0)
+
+
+def alternar_editar_todo():
+    st.session_state["m_editar_todo"] = not st.session_state.get("m_editar_todo", False)
+
+
+def abrir_chat():
+    st.session_state["chat_abierto"] = True
 
 
 def reiniciar_encuesta():
-    for k in [*CLAVES.values(), "m_paso", "m_resultado", "m_vista"]:
+    for k in [*CLAVES.values(), "m_paso", "m_resultado", "m_vista", "m_cv_campos", "m_cv_faltan", "m_cv_supuestos", "m_editar_todo"]:
         st.session_state.pop(k, None)
 
 
@@ -1446,35 +1511,41 @@ def controles_paso(paso, sectores, sec_o, cat):
     p = completar(r, sec_o)
     hecho = lambda c: p[c] is not None
     nivel = r["nivel_educativo"]
+    ya = set() if st.session_state.get("m_editar_todo") else set(st.session_state.get("m_cv_campos", []))   # respondidas con la hoja de vida
+    ver = lambda c: c not in ya
     if paso == 0:
-        pregunta("¿Cuántos años tienes?", "Entre 15 y 85 años.")
-        st.selectbox("Edad", EDADES, index=None, placeholder="Selecciona o escribe tu edad", key="m_edad", label_visibility="collapsed")
-        if hecho("edad"):
+        if ver("edad"):
+            pregunta("¿Cuántos años tienes?", "Entre 15 y 85 años.")
+            st.selectbox("Edad", EDADES, index=None, placeholder="Selecciona o escribe tu edad", key="m_edad", label_visibility="collapsed")
+        if hecho("edad") and ver("sexo"):
             pregunta("¿Cuál es tu sexo?")
             st.radio("Sexo", cat["sexo"], index=None, horizontal=True, key="m_sexo", label_visibility="collapsed")
-        if hecho("edad") and hecho("sexo"):
+        if hecho("edad") and hecho("sexo") and ver("estado_civil"):
             pregunta("¿Cuál es tu estado civil?")
             st.selectbox("Estado civil", cat["estado_civil"], index=None, placeholder="Selecciona una opción", key="m_civil", label_visibility="collapsed")
     elif paso == 1:
-        pregunta("¿Cuál es el nivel educativo más alto que has alcanzado?", "Terminado o en curso.")
-        st.selectbox("Nivel educativo", cat["nivel"], index=None, placeholder="Selecciona tu nivel", key="m_nivel", label_visibility="collapsed")
-        if nivel in NIVELES_LEER:
+        if ver("nivel_educativo"):
+            pregunta("¿Cuál es el nivel educativo más alto que has alcanzado?", "Terminado o en curso.")
+            st.selectbox("Nivel educativo", cat["nivel"], index=None, placeholder="Selecciona tu nivel", key="m_nivel", label_visibility="collapsed")
+        if nivel in NIVELES_LEER and ver("sabe_leer_escribir"):
             pregunta("¿Sabes leer y escribir?")
             st.radio("Sabe leer y escribir", ["Sí", "No"], index=None, horizontal=True, key="m_leer", label_visibility="collapsed")
-        if hecho("nivel_educativo") and hecho("sabe_leer_escribir"):
+        if hecho("nivel_educativo") and hecho("sabe_leer_escribir") and ver("asiste_institucion_educ"):
             pregunta("¿Estás estudiando actualmente?")
             st.radio("Asiste a una institución educativa", ["Sí", "No"], index=None, horizontal=True, key="m_estudia", label_visibility="collapsed")
         if hecho("asiste_institucion_educ") and nivel in NIVELES_SUPERIOR + NIVELES_POSGRADO:
-            pregunta("¿De qué área es tu título de educación superior?",
-                     "Si aún no te has graduado, elige «Sin título (aún no me gradúo)»." if nivel in NIVELES_SUPERIOR else "Es obligatorio para posgrados.")
-            st.selectbox("Área del título", opciones_area(nivel), index=None, placeholder="Selecciona el área",
-                         format_func=etiqueta_area, key="m_area", label_visibility="collapsed")
+            if ver("area_titulo_campo_amplio"):
+                pregunta("¿De qué área es tu título de educación superior?",
+                         "Si aún no te has graduado, elige «Sin título (aún no me gradúo)»." if nivel in NIVELES_SUPERIOR else "Es obligatorio para posgrados.")
+                st.selectbox("Área del título", opciones_area(nivel), index=None, placeholder="Selecciona el área",
+                             format_func=etiqueta_area, key="m_area", label_visibility="collapsed")
         elif hecho("asiste_institucion_educ") and nivel:
             nota("No necesitas indicar el área del título: la completamos como «Sin título».")
     elif paso == 2:
-        pregunta("¿En qué departamento trabajas o buscas trabajo?", "Puedes escribir para buscar.")
-        st.selectbox("Departamento", cat["departamento"], index=None, placeholder="Selecciona el departamento", key="m_dep", label_visibility="collapsed")
-        if hecho("departamento"):
+        if ver("departamento"):
+            pregunta("¿En qué departamento trabajas o buscas trabajo?", "Puedes escribir para buscar.")
+            st.selectbox("Departamento", cat["departamento"], index=None, placeholder="Selecciona el departamento", key="m_dep", label_visibility="collapsed")
+        if hecho("departamento") and (ver("zona") or r["departamento"] in DEP_SOLO_CABECERA and ver("departamento")):
             pregunta("¿Vives en la cabecera municipal o en zona rural?")
             solo = r["departamento"] in DEP_SOLO_CABECERA
             st.radio("Zona", ["Cabecera", "Resto"], index=None, horizontal=True, key="m_zona", format_func=etiqueta_zona,
@@ -1482,12 +1553,13 @@ def controles_paso(paso, sectores, sec_o, cat):
             if solo:
                 nota("En este departamento la encuesta solo cubre cabeceras, así que lo completamos por ti.")
     elif paso == 3:
-        pregunta("¿Qué tipo de oficio haces?", "Elige el que más se parezca a tu trabajo.")
-        st.selectbox("Oficio", cat["oficio"], index=None, placeholder="Selecciona tu tipo de oficio",
-                     format_func=lambda v: OFICIOS[v][0], key="m_oficio", label_visibility="collapsed")
-        if r["oficio_gran_grupo"]:
-            nota("Por ejemplo: " + OFICIOS[r["oficio_gran_grupo"]][1] + ".")
-        if hecho("oficio_gran_grupo"):
+        if ver("oficio_gran_grupo"):
+            pregunta("¿Qué tipo de oficio haces?", "Elige el que más se parezca a tu trabajo.")
+            st.selectbox("Oficio", cat["oficio"], index=None, placeholder="Selecciona tu tipo de oficio",
+                         format_func=lambda v: OFICIOS[v][0], key="m_oficio", label_visibility="collapsed")
+            if r["oficio_gran_grupo"]:
+                nota("Por ejemplo: " + OFICIOS[r["oficio_gran_grupo"]][1] + ".")
+        if hecho("oficio_gran_grupo") and (ver("sector_economico_seccion") or r["oficio_gran_grupo"] == MILITAR):
             pregunta("¿A qué sector pertenece la empresa donde trabajas?", "Puedes escribir para buscar.")
             auto = r["oficio_gran_grupo"] == MILITAR and sec_o
             st.selectbox("Sector", sectores, index=None, placeholder="Selecciona el sector", format_func=etiqueta_sector,
@@ -1495,16 +1567,17 @@ def controles_paso(paso, sectores, sec_o, cat):
             if auto:
                 nota("Para Fuerzas Militares completamos el sector de administración pública y defensa.")
     else:
-        pregunta("¿Dónde realizas tu trabajo?")
-        st.selectbox("Lugar de trabajo", cat["lugar"], index=None, placeholder="Selecciona el lugar", key="m_lugar",
-                     on_change=al_cambiar_lugar, label_visibility="collapsed")
-        if hecho("lugar_trabajo"):
+        if ver("lugar_trabajo"):
+            pregunta("¿Dónde realizas tu trabajo?")
+            st.selectbox("Lugar de trabajo", cat["lugar"], index=None, placeholder="Selecciona el lugar", key="m_lugar",
+                         on_change=al_cambiar_lugar, label_visibility="collapsed")
+        if hecho("lugar_trabajo") and ver("tipo_contrato"):
             pregunta("¿Qué tipo de contrato tienes?", "El actual o el que esperas.")
             st.radio("Tipo de contrato", cat["contrato"], index=None, horizontal=True, key="m_contrato", label_visibility="collapsed")
-        if hecho("lugar_trabajo") and hecho("tipo_contrato"):
+        if hecho("lugar_trabajo") and hecho("tipo_contrato") and ver("medio_consiguio_empleo"):
             pregunta("¿Cómo conseguiste (o buscas) el empleo?")
             st.selectbox("Medio", MEDIOS, index=None, placeholder="Selecciona una opción", key="m_medio", label_visibility="collapsed")
-        if hecho("lugar_trabajo") and hecho("tipo_contrato") and hecho("medio_consiguio_empleo"):
+        if hecho("lugar_trabajo") and hecho("tipo_contrato") and hecho("medio_consiguio_empleo") and ver("minutos_desplazamiento"):
             pregunta("¿Cuántos minutos tardas en llegar al trabajo?", "Solo ida, entre 0 y 300. Si trabajas en tu vivienda, es 0.")
             st.selectbox("Minutos de desplazamiento", MINUTOS, index=None, placeholder="Selecciona o escribe los minutos",
                          format_func=lambda v: "0 min (no me desplazo)" if v == 0 else f"{v} min", key="m_min", label_visibility="collapsed")
@@ -1585,6 +1658,16 @@ def pagina_modelo(df_raw):
                 html(f'<div class="sv-steps">{segmentos}</div>')
                 _, titular, intro, campos = PASOS[paso]
                 html(f'<div><div class="sv-title">{titular}</div><div class="sv-lead">{intro}</div></div>')
+                cvc = ss.get("m_cv_campos")
+                if cvc:
+                    editar = ss.get("m_editar_todo", False)
+                    html(f'<div class="sv-cv"><b>Completamos {len(cvc)} de {len(CAMPOS)} datos con tu hoja de vida.</b> '
+                         + ("Ahora ves todas las preguntas para que puedas corregir lo que quieras." if editar else "Solo te preguntamos lo que falta.") + '</div>')
+                    st.button("Volver a solo lo que falta" if editar else "Revisar o editar todas las respuestas", key="sv_editar_todo_btn",
+                              on_click=alternar_editar_todo, type="tertiary")
+                elif paso == 0:
+                    html('<div class="sv-cv"><b>¿Tienes tu hoja de vida a la mano?</b> Súbela al asistente y llenamos la encuesta por ti; solo te preguntamos lo que falte.</div>')
+                    st.button("Subir mi hoja de vida", key="sv_abrir_cv_btn", on_click=abrir_chat, type="tertiary", icon=":material/upload_file:")
                 html('<div class="sv-tip"><b>Si no ves tu situación exacta,</b> elige la opción que más se acerque a ella.</div>')
                 controles_paso(paso, sectores, sec_o, cat)
                 r = respuestas()
@@ -1597,21 +1680,22 @@ def pagina_modelo(df_raw):
                 paso_completo = all(p[c] is not None for c in campos) and not any(m["paso"] == paso for m in bloqueos)
                 c1, c2 = st.columns(2, vertical_alignment="center")
                 with c1, st.container(key="svback"):
-                    if paso > 0:
+                    if hay_anterior_visible(paso):
                         st.button("←  Atrás", key="sv_back_btn", on_click=paso_menos)
                 with c2, st.container(key="svnext"):
                     if paso_completo:
-                        if paso < len(PASOS) - 1:
+                        if siguiente_visible_existe(paso):
                             st.button("Siguiente  →", key="sv_next_btn", on_click=paso_mas)
                         else:
                             st.button("Ver resumen  →", key="sv_resumen_btn", on_click=ir_vista, args=("resumen",))
         elif vista == "resumen":
             with st.container(key="card_perfil"):
                 grupos = ""
+                cvset = set(ss.get("m_cv_campos", []))
                 for nombre, _, _, campos in PASOS:
                     filas = "".join(
                         f'<div class="pf-row"><span>{ETIQUETAS[c]}</span><b>{escape(mostrar_valor(c, p[c]))}'
-                        f'{"<i>auto</i>" if r[c] is None else ""}</b></div>' for c in campos)
+                        f'{"<i>auto</i>" if r[c] is None else "<i>CV</i>" if c in cvset else ""}</b></div>' for c in campos)
                     grupos += f'<div class="pf-g">{nombre}</div>{filas}'
                 html(f'<div class="card-head"><div class="eyebrow">Tu perfil</div><div class="card-sub" style="margin:0">{len(CAMPOS)} respuestas</div></div><div>{grupos}</div>')
                 for m in avisos:
@@ -1619,7 +1703,7 @@ def pagina_modelo(df_raw):
                 payload = {c: p[c] for c in CAMPOS}
                 c1, c2 = st.columns(2, vertical_alignment="center")
                 with c1, st.container(key="svback"):
-                    st.button("←  Editar respuestas", key="sv_editar_btn", on_click=ir_vista, args=("preguntas", 0))
+                    st.button("←  Editar respuestas", key="sv_editar_btn", on_click=editar_respuestas)
                 with c2, st.container(key="predecir_modelo"):
                     st.button("Predecir", key="btn_predecir_modelo", on_click=predecir_y_mostrar, args=(payload,))
         else:
@@ -1641,6 +1725,332 @@ def pagina_modelo(df_raw):
 
 
 # ---------------------------------------------------------------------------
+# HOJA DE VIDA -> ENCUESTA (el asistente lee la hoja de vida y completa lo que pueda)
+# ---------------------------------------------------------------------------
+def _norm(t):
+    return unicodedata.normalize("NFKD", str(t)).encode("ascii", "ignore").decode().lower()
+
+
+def leer_archivo(archivo):
+    """Texto de un PDF, Word (.docx) o .txt subido por el usuario. Devuelve '' si no se puede leer."""
+    nombre = archivo.name.lower()
+    datos = archivo.getvalue()
+    try:
+        if nombre.endswith(".pdf"):
+            from pypdf import PdfReader
+            return "\n".join((pg.extract_text() or "") for pg in PdfReader(io.BytesIO(datos)).pages)
+        if nombre.endswith(".docx"):
+            from docx import Document
+            doc = Document(io.BytesIO(datos))
+            partes = [p.text for p in doc.paragraphs]
+            for t in doc.tables:
+                for fila in t.rows:
+                    partes.append(" | ".join(c.text for c in fila.cells))
+            return "\n".join(partes)
+        return datos.decode("utf-8", errors="ignore")
+    except Exception:
+        return ""
+
+
+MESES_ES = {m: i + 1 for i, m in enumerate(["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"])}
+CIUDADES = {
+    "Bogotá D.C.": "bogota|santa fe de bogota", "Cundinamarca": "soacha|chia|zipaquira|cajica|facatativa|fusagasuga|mosquera|funza|madrid cundinamarca|la calera|sopo|cundinamarca",
+    "Antioquia": "medellin|envigado|bello|itagui|sabaneta|rionegro|apartado|antioquia|la estrella", "Valle del Cauca": "cali|palmira|buenaventura|tulua|yumbo|jamundi|cartago|valle del cauca",
+    "Atlántico": "barranquilla|soledad|malambo|puerto colombia|atlantico", "Bolívar": "cartagena|magangue|bolivar", "Santander": "bucaramanga|floridablanca|giron|piedecuesta|barrancabermeja|santander",
+    "Norte de Santander": "cucuta|pamplona|norte de santander|villa del rosario", "Risaralda": "pereira|dosquebradas|risaralda", "Caldas": "manizales|caldas",
+    "Quindío": "armenia|calarca|quindio", "Tolima": "ibague|espinal|tolima", "Huila": "neiva|pitalito|huila", "Meta": "villavicencio|acacias|meta",
+    "Nariño": "pasto|ipiales|tumaco|narino", "Cauca": "popayan|santander de quilichao|cauca", "Córdoba": "monteria|lorica|cordoba", "Magdalena": "santa marta|cienaga|magdalena",
+    "Cesar": "valledupar|aguachica|cesar", "Sucre": "sincelejo|sucre", "Boyacá": "tunja|duitama|sogamoso|chiquinquira|boyaca", "La Guajira": "riohacha|maicao|uribia|la guajira",
+    "Chocó": "quibdo|choco", "Caquetá": "florencia|caqueta", "Casanare": "yopal|casanare", "Arauca": "arauca|saravena", "Putumayo": "mocoa|puerto asis|putumayo",
+    "Amazonas": "leticia|amazonas", "Guaviare": "san jose del guaviare|guaviare", "Vaupés": "mitu|vaupes", "Vichada": "puerto carreno|vichada", "Guainía": "inirida|guainia",
+    "San Andrés": "san andres|providencia"}
+AREAS_PALABRAS = [   # orden = prioridad
+    ("06", r"sistemas|software|informatica|computaci|telematica|tecnologias? de la informacion|desarrollo de software|telecomunicac|ciberseguridad|ciencia de datos|data science|analitica"),
+    ("09", r"medicin|enfermeri|odontolog|salud|fisioterapia|terapia|nutricion|farmacia|bacteriolog|psiquiatr|optometr"),
+    ("08", r"agronom|agropecuari|veterinari|zootecn|forestal|pesquer|agroindustri"),
+    ("01", r"licenciatur|educacion|pedagog|docencia|normal superior"),
+    ("07", r"ingenieria|arquitectura|industrial|civil|mecanic|electric|electronic|construccion|produccion|ambiental|petroleos|minas|geolog"),
+    ("03", r"psicolog|sociolog|comunicacion|periodismo|trabajo social|ciencias politicas|antropolog|ciencias sociales|relaciones internacionales|bibliotecolog"),
+    ("05", r"matematic|estadistic|fisica|biologia|quimica|ciencias naturales|ciencias exactas"),
+    ("04", r"administraci|empresas|negocios|derecho|abogad|contadur|contable|finanzas|economia|mercadeo|marketing|comercio internacional|gestion|gerencia|recursos humanos|talento humano|seguros|banca"),
+    ("02", r"arte|diseno|musica|humanidades|literatura|filosofia|historia|idiomas|lenguas"),
+    ("10", r"turismo|hoteler|gastronom|cocina|seguridad|deporte|servicios|transporte|peluquer|estetica")]
+OFICIO_PALABRAS = [   # (grupo, patrón); gana la coincidencia más temprana en la zona de experiencia
+    ("DIRECTORES Y GERENTES", r"gerente|director[a]?\b|jefe de area|coordinador[a]? general|vicepresident|president[ea]|subgerente"),
+    ("FUERZAS MILITARES", r"soldado|militar|ejercito|armada nacional|fuerza aerea"),
+    ("PROFESIONALES, CIENTÍFICOS E INTELECTUALES", r"ingenier[oa]|medic[oa]\b|abogad[oa]|docente|profesor[a]?|contador[a]?|psicolog[oa]|arquitect[oa]|desarrollador[a]?|programador[a]?|cientific[oa]|economista|consultor[a]?|investigador[a]?|disenador[a]?|analista (de datos|de sistemas|senior|financier[oa]|de negocios)|administrador[a]? de empresas|enfermer[oa] jefe|especialista|data scientist|abogad"),
+    ("TÉCNICOS Y PROFESIONALES DEL NIVEL MEDIO", r"tecnico|tecnologo|analista|supervisor[a]?|asistente tecnico|inspector[a]?|programador junior"),
+    ("PERSONAL DE APOYO ADMINISTRATIVO", r"auxiliar (administrativ|contable|de nomina|de oficina)|asistente|secretari[oa]|recepcionist|digitador|oficinista|archivista|auxiliar"),
+    ("TRABAJADORES DE LOS SERVICIOS Y VENDEDORES DE COMERCIOS Y MERCADOS", r"vendedor[a]?|asesor[a]? (comercial|de servicio|de ventas)|cajer[oa]|mesero|cocinero|barista|peluquer|vigilante|guarda de seguridad|promotor[a]?|ejecutiv[oa] (comercial|de ventas|de cuenta)|call center|agente de servicio"),
+    ("AGRICULTORES Y TRABAJADORES CALIFICADOS AGROPECUARIOS, FORESTALES Y PESQUEROS", r"agricultor|ganadero|campesino|pescador|jornalero|operario agricola"),
+    ("OFICIALES, OPERARIOS, ARTESANOS Y OFICIOS RELACIONADOS", r"albanil|electricista|soldador|mecanico|carpintero|plomero|pintor[a]?|maestro de obra|ebanista|modista|confeccionista"),
+    ("OPERADORES DE INSTALACIONES Y MÁQUINAS Y ENSAMBLADORES", r"operador[a]? de|conductor|operario de (maquina|produccion|planta)|ensamblador|montacarga|chofer"),
+    ("OCUPACIONES ELEMENTALES", r"servicios generales|mensajer[oa]|aseadora|aseo|ayudante|recolector|obrero|bodeguero|empacador|domiciliario|auxiliar de bodega")]
+SECTOR_PALABRAS = [   # (letra, patrón); gana la coincidencia más temprana en la zona de experiencia
+    ("J", r"software|tecnologia|telecomunicaciones|informacion y comunicaciones|\bti\b|sistemas de informacion|internet|digital|saas|datos"),
+    ("K", r"banco|bancari|financier[oa]|seguros|fiduciaria|credito|fintech"),
+    ("P", r"colegio|universidad|institucion educativa|educacion|escuela|\bsena\b|academia"),
+    ("Q", r"hospital|clinica|salud|\beps\b|\bips\b|farmaceutic|laboratorio clinico"),
+    ("F", r"construccion|constructora|obra civil|infraestructura"),
+    ("G", r"comercio|retail|supermercado|tienda|almacen|distribuidora|comercializadora|concesionario"),
+    ("C", r"manufactura|industria|fabrica|planta de|alimentos y bebidas|textil|confecciones"),
+    ("I", r"restaurante|hotel|alojamiento|turismo|gastronom|comidas"),
+    ("H", r"transporte|logistica|almacenamiento|mensajeria|courier|aerolinea|carga"),
+    ("M", r"consultoria|asesoria|juridic|legal|contable|auditoria|publicidad|investigacion de mercados"),
+    ("N", r"outsourcing|temporal|servicios administrativos|seguridad privada|agencia de empleo|call center|contact center"),
+    ("O", r"gobierno|alcaldia|gobernacion|ministerio|entidad publica|secretaria de|\bdane\b|contraloria|fiscalia|ejercito|policia"),
+    ("B", r"mineria|petroleo|carbon|cantera|hidrocarburos|\boil\b"),
+    ("D", r"energia|electricidad|electrificadora"),
+    ("E", r"acueducto|residuos|saneamiento|reciclaje"),
+    ("A", r"agricultura|agricola|ganaderia|pesca|agroindustria|cultivo|flores|cafe"),
+    ("L", r"inmobiliari|bienes raices"),
+    ("R", r"entretenimiento|cultura|recreacion|medios de comunicacion|audiovisual|musica"),
+    ("S", r"peluquer|lavander|reparacion|asociacion|iglesia|fundacion|\bong\b"),
+    ("T", r"empleada del servicio|hogares|servicio domestico")]
+
+
+def _primer_match(patrones, texto):
+    """(clave, posición) de la coincidencia más temprana; los empates siguen el orden de la lista."""
+    mejor = None
+    for clave, pat in patrones:
+        m = re.search(pat, texto)
+        if m and (mejor is None or m.start() < mejor[1]):
+            mejor = (clave, m.start())
+    return mejor
+
+
+def extraer_heuristico(texto, cat, sectores):
+    """Lectura sin IA: reglas y palabras clave. Devuelve (datos, supuestos); solo trae lo que se pudo identificar con razonable seguridad."""
+    t = _norm(texto)
+    lineas = [l.strip() for l in t.splitlines() if l.strip()]
+    d, supuestos = {}, set()
+
+    # edad: dato directo o fecha de nacimiento
+    hoy = date.today()
+    m = re.search(r"edad\s*[:\-]?\s*(\d{2})\b", t)
+    if not m:
+        for mm in re.finditer(r"\b(\d{2})\s*anos\b(?!\s*(de|en)\b)", t[:2500]):
+            m = mm
+            break
+    if m and 15 <= int(m.group(1)) <= 85:
+        d["edad"] = int(m.group(1))
+    else:
+        nac = re.search(r"(?:nacimiento|nacid[oa]|f\.?\s*nac)[^0-9a-z]{0,25}(\d{1,2})\s*(?:[/\-.]|de\s+)\s*(\d{1,2}|[a-z]+)\s*(?:[/\-.]|de\s+)\s*(\d{4})", t)
+        if nac:
+            dia, mes, anio = int(nac.group(1)), nac.group(2), int(nac.group(3))
+            mes = int(mes) if mes.isdigit() else MESES_ES.get(mes, 6)
+            edad = hoy.year - anio - ((hoy.month, hoy.day) < (mes, dia))
+            if 15 <= edad <= 85:
+                d["edad"] = edad
+    # sexo
+    m = re.search(r"(?:sexo|genero)\s*[:\-]?\s*(femenino|masculino|mujer|hombre|f|m)\b", t)
+    if m:
+        d["sexo"] = "Femenino" if m.group(1) in ("femenino", "mujer", "f") else "Masculino"
+    # estado civil
+    m = re.search(r"estado civil\s*[:\-]?\s*(soltero|soltera|casad[oa]|divorciad[oa]|separad[oa]|viud[oa])", t)
+    if m:
+        g = m.group(1)
+        d["estado_civil"] = ("Soltero(a)" if g.startswith("solter") else "Casado(a)" if g.startswith("casad")
+                             else "Viudo(a)" if g.startswith("viud") else "Separado(a) / divorciado(a)")
+    # nivel educativo (el más alto que aparezca) y si sigue estudiando
+    niveles = [
+        ("Doctorado", r"doctorad|\bphd\b|ph\.d"),
+        ("Maestría", r"maestri|magister|\bmaster\b|\bmba\b|\bmsc\b"),
+        ("Especialización", r"especializacion"),
+        ("Universitaria", r"universidad|pregrado|licenciatur|profesional en|ingenieria (de|en|industrial|civil|mecanica|electrica|electronica|quimica|ambiental)|contaduria|derecho"),
+        ("Tecnológica", r"tecnologo|tecnologia en|programa tecnologico"),
+        ("Técnica profesional", r"tecnico profesional|tecnica profesional|tecnico en|tecnica laboral|tecnico laboral"),
+        ("Media técnica", r"bachiller tecnico|media tecnica"),
+        ("Media académica", r"bachiller|bachillerato|educacion media"),
+        ("Básica secundaria", r"secundaria"),
+        ("Básica primaria", r"primaria")]
+    encontrados = [(i, n, re.search(p, t)) for i, (n, p) in enumerate(niveles)]
+    encontrados = [(i, n, mt) for i, n, mt in encontrados if mt and n in cat["nivel"]]
+    if encontrados:
+        _, nivel, mt = encontrados[0]
+        d["nivel_educativo"] = nivel
+        ini = t.rfind("\n", 0, mt.start()) + 1
+        fin = t.find("\n", mt.end())
+        zona_titulo = t[max(0, ini - 120): (fin if fin != -1 else len(t)) + 160]
+        en_curso = re.search(r"cursando|en curso|actualmente|actualidad|presente|sin graduar|egresad|no finaliz|trunc", zona_titulo)
+        seguir = re.search(r"cursando|actualmente estudi|actualmente curso|estudiante de|estudio actualmente|semestre", t)
+        d["asiste_institucion_educ"] = "Sí" if seguir else "No"
+        supuestos.add("asiste_institucion_educ")
+        if nivel in NIVELES_SUPERIOR + NIVELES_POSGRADO:
+            if en_curso and nivel in NIVELES_SUPERIOR:
+                d["area_titulo_campo_amplio"] = SIN_TITULO
+                supuestos.add("area_titulo_campo_amplio")
+            else:
+                r = _primer_match([(c, p) for c, p in AREAS_PALABRAS], zona_titulo)
+                if r:
+                    d["area_titulo_campo_amplio"] = next(a for a in AREAS if a.startswith(r[0]))
+                    supuestos.add("area_titulo_campo_amplio")
+    # ubicación: ciudad o departamento (se prioriza el encabezado y las líneas de residencia)
+    candidatas = [l for l in lineas if re.search(r"ciudad|residencia|direccion|ubicacion|domicilio|vive|reside", l)] + lineas[:25]
+    mejor = None
+    for orden, linea in enumerate(candidatas):
+        for dep, pats in CIUDADES.items():
+            mm = re.search(r"\b(" + pats + r")\b", linea)
+            if mm and dep in cat["departamento"]:
+                mejor = (dep, linea)
+                break
+        if mejor:
+            break
+    if mejor:
+        d["departamento"] = mejor[0]
+        d["zona"] = "Resto" if re.search(r"vereda|corregimiento|\bfinca\b|zona rural|rural", mejor[1]) else "Cabecera"
+        supuestos.add("zona")
+    # oficio y sector: zona de experiencia (si no hay encabezado, el inicio del documento)
+    exp = re.search(r"experiencia (laboral|profesional)|historial laboral|trayectoria", t)
+    zona = t[exp.end(): exp.end() + 900] if exp else t[:1800]
+    of = _primer_match([(g, p) for g, p in OFICIO_PALABRAS], zona)
+    if of and of[0] in cat["oficio"]:
+        d["oficio_gran_grupo"] = of[0]
+        supuestos.add("oficio_gran_grupo")
+    sc = _primer_match(SECTOR_PALABRAS, zona)
+    if sc and d.get("oficio_gran_grupo") != MILITAR:
+        sector = next((s for s in sectores if s.startswith(sc[0] + " -")), None)
+        if sector:
+            d["sector_economico_seccion"] = sector
+            supuestos.add("sector_economico_seccion")
+    # condiciones que a veces aparecen
+    if re.search(r"teletrabajo|trabajo remoto|home office|remoto|desde casa|trabajo en casa", t):
+        d["lugar_trabajo"] = "En vivienda propia"
+        d["minutos_desplazamiento"] = 0
+        supuestos.update({"lugar_trabajo", "minutos_desplazamiento"})
+    m = re.search(r"contrato[^.\n]{0,25}(indefinid|termino fijo|a termino fijo|obra o labor)", t)
+    if m:
+        d["tipo_contrato"] = "Indefinido" if m.group(1) == "indefinid" else "Fijo"
+        supuestos.add("tipo_contrato")
+    return d, supuestos
+
+
+def _clave_ia():
+    try:
+        k = st.secrets.get("ANTHROPIC_API_KEY")
+    except Exception:
+        k = None
+    return k or os.environ.get("ANTHROPIC_API_KEY")
+
+
+def extraer_con_ia(texto, cat, sectores):
+    """Lectura con IA (opcional). Solo se usa si hay ANTHROPIC_API_KEY (en st.secrets o variable de entorno) y el paquete 'anthropic'.
+    Devuelve (datos, supuestos) o None si no está disponible o falla; en ese caso se usa la lectura por reglas."""
+    clave = _clave_ia()
+    if not clave:
+        return None
+    try:
+        import anthropic
+        opciones = {
+            "sexo": cat["sexo"], "estado_civil": cat["estado_civil"], "nivel_educativo": cat["nivel"], "asiste_institucion_educ": ["Sí", "No"],
+            "area_titulo_campo_amplio": AREAS + [SIN_TITULO], "departamento": cat["departamento"], "zona": ["Cabecera", "Resto"],
+            "tipo_contrato": cat["contrato"], "lugar_trabajo": cat["lugar"], "sector_economico_seccion": sectores, "oficio_gran_grupo": cat["oficio"]}
+        instrucciones = (
+            "Eres un extractor de datos de hojas de vida colombianas. Devuelve SOLO un objeto JSON. Incluye una clave únicamente si la hoja de vida "
+            "permite deducirla con seguridad; si no, omítela (no inventes). Claves: edad (entero 15-85; si hay fecha de nacimiento calcúlala con la fecha de hoy "
+            f"{date.today().isoformat()}), minutos_desplazamiento (entero 0-300) y estas, cuyo valor debe ser EXACTAMENTE una de las opciones dadas: "
+            + json.dumps(opciones, ensure_ascii=False) + ". Para oficio_gran_grupo y sector_economico_seccion usa el cargo y la empresa más recientes. "
+            "area_titulo_campo_amplio solo aplica si el nivel educativo más alto es superior o posgrado (usa 'Sin título' si aún no se gradúa).")
+        cliente = anthropic.Anthropic(api_key=clave)
+        r = cliente.messages.create(model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5-5"), max_tokens=1500, system=instrucciones,
+                                    messages=[{"role": "user", "content": "Hoja de vida:\n\n" + texto[:12000]}])
+        bruto = "".join(b.text for b in r.content if getattr(b, "type", "") == "text")
+        datos = json.loads(bruto[bruto.index("{"): bruto.rindex("}") + 1])
+    except Exception:
+        return None
+    return datos, set(datos)
+
+
+def validar_extraccion(datos, cat, sectores):
+    """Deja solo valores que existen en las listas de la encuesta (nada fuera de catálogo)."""
+    opciones = {"sexo": cat["sexo"], "estado_civil": cat["estado_civil"], "nivel_educativo": cat["nivel"], "asiste_institucion_educ": ["Sí", "No"],
+                "area_titulo_campo_amplio": AREAS + [SIN_TITULO], "departamento": cat["departamento"], "zona": ["Cabecera", "Resto"],
+                "tipo_contrato": cat["contrato"], "lugar_trabajo": cat["lugar"], "sector_economico_seccion": sectores, "oficio_gran_grupo": cat["oficio"]}
+    limpio = {}
+    for c, v in datos.items():
+        if c == "edad" and isinstance(v, (int, float)) and 15 <= int(v) <= 85:
+            limpio[c] = int(v)
+        elif c == "minutos_desplazamiento" and isinstance(v, (int, float)) and 0 <= int(v) <= 300:
+            limpio[c] = min(MINUTOS, key=lambda x: abs(x - int(v)))      # el valor más cercano de la lista
+        elif c in opciones and v in opciones[c]:
+            limpio[c] = v
+    if limpio.get("nivel_educativo") not in NIVELES_SUPERIOR + NIVELES_POSGRADO:
+        limpio.pop("area_titulo_campo_amplio", None)
+    if limpio.get("departamento") in DEP_SOLO_CABECERA:
+        limpio["zona"] = "Cabecera"
+    return limpio
+
+
+def extraer_cv(texto):
+    df = load_data(DATA_PATH)
+    sectores, cat = catalogos_modelo(df)
+    res, motor = extraer_con_ia(texto, cat, sectores), "IA"
+    if not res:
+        res, motor = extraer_heuristico(texto, cat, sectores), "lectura automática"
+    datos, supuestos = res
+    datos = validar_extraccion(datos, cat, sectores)
+    return datos, {c for c in supuestos if c in datos}, motor
+
+
+def pendientes():
+    """Campos que todavía no tienen respuesta (considerando lo que se completa solo por las reglas)."""
+    sectores, _ = catalogos_modelo(load_data(DATA_PATH))
+    p = completar(respuestas(), sector_defensa(sectores))
+    return [c for c in CAMPOS if p[c] is None], p
+
+
+def aplicar_cv(datos, supuestos):
+    """Vuelca lo leído de la hoja de vida en la encuesta y la deja lista para preguntar solo lo que falta."""
+    ss = st.session_state
+    reiniciar_encuesta()
+    for campo, valor in datos.items():
+        ss[CLAVES[campo]] = valor
+    ss["m_cv_campos"] = sorted(datos)
+    ss["m_cv_supuestos"] = sorted(supuestos)
+    ss["page"] = "modelo"
+    ss["_subir"] = True
+    faltan, p = pendientes()
+    bloqueos = [m for m in validar(p) if m["tipo"] == "bloqueo"]
+    if bloqueos:                                  # datos que no cuadran entre sí: se muestran todas las preguntas para corregirlos
+        ss["m_editar_todo"] = True
+        ss["m_paso"] = bloqueos[0]["paso"]
+        ss["m_vista"] = "preguntas"
+        return faltan, bloqueos
+    paso = next((i for i, (_, _, _, campos) in enumerate(PASOS) if any(c in faltan for c in campos)), None)
+    ss["m_vista"] = "preguntas" if paso is not None else "resumen"
+    ss["m_paso"] = paso or 0
+    return faltan, []
+
+
+def procesar_cv(nombre, texto):
+    """Lee la hoja de vida, completa la encuesta y deja en el chat el resumen de lo encontrado."""
+    ss = st.session_state
+    ss.chat.append({"role": "user", "content": f"Adjunté mi hoja de vida: {nombre}"})
+    if len(texto.strip()) < 80:
+        ss.chat.append({"role": "assistant", "content": "No pude leer texto en ese archivo (puede ser una imagen escaneada). "
+                        "Prueba con un PDF o Word con texto seleccionable, o responde la encuesta directamente."})
+        return False
+    datos, supuestos, motor = extraer_cv(texto)
+    if not datos:
+        ss.chat.append({"role": "assistant", "content": "Leí tu hoja de vida, pero no encontré datos que pueda usar con seguridad. "
+                        "Responde la encuesta directamente; son pocas preguntas."})
+        return False
+    faltan, bloqueos = aplicar_cv(datos, supuestos)
+    p = completar(respuestas(), sector_defensa(catalogos_modelo(load_data(DATA_PATH))[0]))
+    vistos = "\n".join(f"- **{ETIQUETAS[c]}:** {mostrar_valor(c, p[c])}" + (" _(supuesto, confírmalo)_" if c in supuestos else "")
+                       for c in CAMPOS if c in datos)
+    falta = ", ".join(ETIQUETAS[c].lower() for c in faltan)
+    msg = f"Leí tu hoja de vida ({motor}) y completé **{len(datos)} de {len(CAMPOS)}** datos:\n\n{vistos}\n\n"
+    if bloqueos:
+        msg += "Encontré datos que no cuadran entre sí (por ejemplo edad y nivel educativo). Revísalos en la encuesta, te dejé todas las preguntas visibles.\n\n"
+    msg += (f"Solo te preguntaré lo que falta: {falta}." if faltan else "No falta nada: revisa el resumen y pulsa «Predecir».")
+    msg += "\n\n_Tu hoja de vida se usa solo para llenar la encuesta y esta aplicación no la guarda" + (" (se envió al servicio de IA configurado)." if motor == "IA" else ".") + "_"
+    ss.chat.append({"role": "assistant", "content": msg})
+    return True
+
+
+
+# ---------------------------------------------------------------------------
 # APP
 # ---------------------------------------------------------------------------
 inject_css()
@@ -1652,6 +2062,11 @@ if st.session_state.page != "inicio":
     barra_nav()
 
 pagina = st.session_state.page
+# Al salir del modelo predictivo, la encuesta se reinicia para que al volver empiece desde cero
+if st.session_state.get("_pagina_prev") == "modelo" and pagina != "modelo":
+    reiniciar_encuesta()
+st.session_state["_pagina_prev"] = pagina
+
 if pagina == "inicio":
     pagina_inicio(df_raw)
 elif pagina == "formalidad":
