@@ -4,6 +4,7 @@ Ejecutar con:  streamlit run app.py
 """
 
 import base64
+import re
 from html import escape
 from pathlib import Path
 from string import Template
@@ -236,23 +237,46 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 @media (min-width:1100px) { .block-container:has(.cover-content) { padding-right:32px; } }
 @media (max-width:900px) { .cover-title { font-size:2.8rem; } .cover-content { padding-top:12vh; } }
 
-/* Secciones de modelos: variables, ejecución y resultados */
-div[class*="st-key-panel_vars_"], div[class*="st-key-panel_result_"] { border:1px solid $BORDER; border-radius:12px; padding:20px; }
-div[class*="st-key-panel_vars_"] { background:$SURFACE; }
-div[class*="st-key-panel_result_"] { border-style:dashed; min-height:660px; }
-.step { display:flex; align-items:center; gap:10px; }
-.step-n { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%;
-    background:$PRIMARY; color:#FFFFFF; font-size:13px; font-weight:600; flex:none; }
-.step-t { font-size:17px; font-weight:600; }
-.step-sub { color:$MUTED; font-size:14px; line-height:1.5; margin:6px 0 10px; }
-div[class*="st-key-panel_vars_"] label p { font-size:12px; color:$MUTED2; font-weight:500; }
-div[class*="st-key-panel_vars_"] [data-baseweb="select"] > div { border:1px solid $BORDER; border-radius:8px; background:$FIELD; min-height:40px; }
-div[class*="st-key-predecir_"] button { width:100%; background:$PRIMARY; color:#FFFFFF; border:none; border-radius:8px;
-    padding:.85rem 1rem; font-size:1.05rem; font-weight:600; transition:background .15s; }
+/* Encuesta del modelo predictivo */
+.sv-steps { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+.sv-step { border-top:3px solid $HAIRLINE; padding-top:8px; font-size:13px; color:$MUTED; }
+.sv-step b { display:block; font-size:11px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; }
+.sv-step.done { border-top-color:$NOFORMAL; color:$MUTED2; }
+.sv-step.on { border-top-color:$PRIMARY_DARK; color:$PRIMARY_DARK; font-weight:600; }
+.sv-tip { background:$TINT; color:$TEAL_TEXT; border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.4; }
+.sv-title { font-size:26px; font-weight:600; letter-spacing:-0.01em; line-height:1.2; margin-top:8px; }
+.sv-lead { font-size:14px; color:$MUTED; margin-top:4px; }
+.sv-q { font-size:17px; font-weight:600; margin-top:14px; }
+.sv-h { font-size:13px; color:$MUTED; margin-top:2px; }
+.sv-msg { border-radius:8px; padding:10px 14px; font-size:13px; line-height:1.5; margin-top:6px; }
+.sv-msg.advertencia { background:#FFF7EE; border:1px solid #F3DCC2; color:#4A2F14; }
+.sv-msg.bloqueo { background:#FBEAE5; border:1px solid #E8B9AA; color:#7A2410; }
+div[class*="st-key-card_encuesta"] { padding:28px; gap:14px; }
+div[class*="st-key-card_encuesta"] [data-baseweb="select"] > div, div[class*="st-key-card_encuesta"] [data-baseweb="input"] {
+    background:$FIELD !important; border:1px solid $BORDER; border-radius:8px; min-height:44px; font-size:15px; }
+div[class*="st-key-card_encuesta"] [data-testid="stNumberInput"] { max-width:260px; }
+div[class*="st-key-card_encuesta"] [data-testid="stRadio"] label p { font-size:15px; }
+.st-key-svnext { display:flex; justify-content:flex-end; }
+.st-key-svnext button { height:44px; min-height:0; padding:0 22px; border:none; border-radius:999px; background:$PRIMARY; color:#FFFFFF; font-size:14px; font-weight:500; width:auto; transition:background .15s; }
+.st-key-svnext button:hover { background:#0E3340; color:#FFFFFF; }
+.st-key-svnext button:disabled { background:$TRACK; color:$MUTED; opacity:1; }
+.st-key-svnext button p { color:inherit; }
+.st-key-svback button, .st-key-svreset button { min-height:0; padding:4px 0; border:none; background:transparent; color:$MUTED2; font-size:14px; width:auto; }
+.st-key-svback button:hover, .st-key-svreset button:hover { color:$PRIMARY; background:transparent; }
+div[class*="st-key-card_perfil"], div[class*="st-key-card_resultado"] { padding:20px; gap:12px; }
+.pf-row { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-top:1px solid $HAIRLINE; font-size:13px; color:$MUTED2; }
+.pf-row b { font-weight:500; color:$TEXT; text-align:right; }
+.pf-row b.vacio { color:#B5BDC2; }
+.pf-row i { font-style:normal; font-size:10px; color:$ACCENT_TEXT; border:1px solid $ACCENT; border-radius:999px; padding:0 6px; margin-left:6px; }
+div[class*="st-key-predecir_"] button { width:100%; height:48px; background:$PRIMARY; color:#FFFFFF; border:none; border-radius:8px; font-size:16px; font-weight:600; transition:background .15s; }
 div[class*="st-key-predecir_"] button:hover { background:#0E3340; color:#FFFFFF; }
+div[class*="st-key-predecir_"] button:disabled { background:$TRACK; color:$MUTED; opacity:1; }
 div[class*="st-key-predecir_"] button p { color:inherit; font-size:inherit; font-weight:inherit; }
-.result-empty { min-height:420px; display:flex; align-items:center; justify-content:center; color:$MUTED;
-    font-size:.95rem; border-top:1px solid $HAIRLINE; margin-top:1rem; }
+.rs { display:flex; flex-direction:column; gap:6px; padding:6px 0 10px; }
+.rs-l { font-size:13px; color:$MUTED2; }
+.rs-v { font-size:36px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; line-height:1.1; }
+.rs-r { font-size:14px; color:$TEXT; font-weight:500; }
+.rs-empty { padding:28px 8px; text-align:center; color:$MUTED; font-size:14px; line-height:1.6; }
 
 @media (max-width:900px) {
     .block-container { padding:16px 16px 32px; }
@@ -651,7 +675,7 @@ def ir(pagina):
 
 
 NAV = [("formalidad", "Análisis descriptivo formalidad"), ("ingresos", "Análisis descriptivo ingresos"),
-       ("salario", "Modelo predictivo ingresos"), ("empleo", "Modelo predictivo formalidad")]
+       ("modelo", "Modelo predictivo")]
 
 
 def barra_nav():
@@ -748,6 +772,9 @@ SUGERENCIAS = {
                  "¿Cómo ha cambiado el ingreso por año?",
                  "¿Qué sector tiene mayor ingreso promedio?"],
 }
+SUGERENCIAS["modelo"] = ["¿Qué significa la probabilidad de empleo formal?",
+                         "¿Por qué me piden estos datos?",
+                         "¿Cómo interpreto el rango del 80%?"]
 SUGERENCIAS_BASE = ["¿Qué datos puedo consultar aquí?", "¿Qué significa trabajo formal?"]
 
 
@@ -867,46 +894,430 @@ def pagina_ingresos(df_raw):
     pie()
 
 
-# Segmentadores pendientes: (nombre, tipo de información). Reemplazar por las variables definitivas del modelo.
-SEGMENTADORES_PENDIENTES = [
-    ("Perfil demográfico", "sexo, edad, estado civil"),
-    ("Educación", "nivel educativo"),
-    ("Ubicación", "departamento"),
-    ("Ocupación", "sector económico, oficio"),
-    ("Tipo de empleo", "posición ocupacional, contrato"),
+# ---------------------------------------------------------------------------
+# MODELO PREDICTIVO UNIFICADO: encuesta de 15 variables
+# Un solo formulario alimenta los dos modelos (probabilidad de empleo formal e ingreso laboral).
+# Valores y reglas: "Especificación de variables y reglas de validación". Los valores enviados
+# deben coincidir exactamente con los de la base; las etiquetas visibles pueden ser más cortas.
+# ---------------------------------------------------------------------------
+NIVELES = ["Ninguno", "Básica primaria", "Básica secundaria", "Media académica", "Media técnica", "Normalista",
+           "Técnica profesional", "Tecnológica", "Universitaria", "Especialización", "Maestría", "Doctorado"]
+NIVELES_SIN_TITULO = NIVELES[:6]            # R-04: área = "Sin título" (automático)
+NIVELES_SUPERIOR = ["Técnica profesional", "Tecnológica", "Universitaria"]   # R-05b: área libre o "Sin título"
+NIVELES_POSGRADO = ["Especialización", "Maestría", "Doctorado"]               # R-05: área obligatoria
+NIVELES_LEER = ["Ninguno", "Básica primaria"]                                 # R-06b: se pregunta si sabe leer
+EDAD_BLOQUEO = {"Normalista": 18, "Técnica profesional": 16, "Tecnológica": 16, "Universitaria": 16,
+                "Especialización": 20, "Maestría": 20, "Doctorado": 23}
+EDAD_AVISO = {"Normalista": 19, "Técnica profesional": 18, "Tecnológica": 18, "Universitaria": 18,
+              "Especialización": 24, "Maestría": 25, "Doctorado": 28}
+ESTADOS_CIVILES = ["Soltero(a)", "Unión libre < 2 años", "Unión libre >= 2 años", "Casado(a)",
+                   "Separado(a) / divorciado(a)", "Viudo(a)"]
+SIN_TITULO = "Sin título"
+AREAS = [
+    "00 PROGRAMAS Y CERTIFICACIONES GENÉRICOS", "01 EDUCACIÓN", "02 ARTES Y HUMANIDADES",
+    "03 CIENCIAS SOCIALES, PERIODISMO E INFORMACIÓN", "04 ADMINISTRACIÓN DE EMPRESAS Y DERECHO",
+    "05 CIENCIAS NATURALES, MATEMÁTICAS Y ESTADÍSTICA", "06 TECNOLOGÍAS DE LA INFORMACIÓN Y LA COMUNICACIÓN (TIC)",
+    "07 INGENIERÍA, INDUSTRIA Y CONSTRUCCIÓN", "08 AGROPECUARIO, SILVICULTURA, PESCA Y VETERINARIA",
+    "09 SALUD Y BIENESTAR", "10 SERVICIOS"]
+DEPARTAMENTOS = [
+    "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bogotá D.C.", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare",
+    "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta",
+    "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "San Andrés", "Santander", "Sucre", "Tolima",
+    "Valle del Cauca", "Vaupés", "Vichada"]
+DEP_SOLO_CABECERA = {"Amazonas", "Arauca", "Casanare", "Guainía", "Guaviare", "Putumayo", "San Andrés", "Vaupés", "Vichada"}  # R-09
+GRAN_CIUDAD = {"Bogotá D.C.", "Antioquia", "Valle del Cauca", "Atlántico"}
+CONTRATOS = ["Indefinido", "Fijo", "Sin contrato escrito"]
+LUGARES = ["Local fijo / oficina / fábrica", "En vivienda propia", "En otras viviendas", "En kiosco / caseta", "En vehículo",
+           "De puerta en puerta", "En la calle (ambulante)", "En el campo / mar / río", "En obra de construcción",
+           "En mina o cantera", "Otro"]
+MEDIOS = ["Familiares / amigos / colegas", "Envió hoja de vida a empresas", "Convocatoria",
+          "Agencia / bolsa de empleo / SENA / SPE", "Avisos clasificados", "Otro medio"]
+MILITAR = "FUERZAS MILITARES"
+OFICIOS = {  # valor exacto -> (etiqueta corta, ejemplos). Los ejemplos son orientativos.
+    "DIRECTORES Y GERENTES": ("Directores y gerentes", "gerente general, director de área"),
+    "PROFESIONALES, CIENTÍFICOS E INTELECTUALES": ("Profesionales y científicos", "médico, ingeniero, abogado, docente universitario"),
+    "TÉCNICOS Y PROFESIONALES DEL NIVEL MEDIO": ("Técnicos y profesionales de nivel medio", "técnico, analista, enfermero auxiliar"),
+    "PERSONAL DE APOYO ADMINISTRATIVO": ("Apoyo administrativo", "secretaria, auxiliar contable, recepcionista"),
+    "TRABAJADORES DE LOS SERVICIOS Y VENDEDORES DE COMERCIOS Y MERCADOS": ("Servicios y ventas", "vendedor, cajero, mesero, peluquero"),
+    "AGRICULTORES Y TRABAJADORES CALIFICADOS AGROPECUARIOS, FORESTALES Y PESQUEROS": ("Agropecuario, forestal y pesquero", "agricultor, ganadero, pescador"),
+    "OFICIALES, OPERARIOS, ARTESANOS Y OFICIOS RELACIONADOS": ("Oficiales, operarios y artesanos", "albañil, mecánico, electricista, soldador"),
+    "OPERADORES DE INSTALACIONES Y MÁQUINAS Y ENSAMBLADORES": ("Operadores de máquinas y ensambladores", "operario de planta, conductor"),
+    "OCUPACIONES ELEMENTALES": ("Ocupaciones elementales", "aseo, mensajería, jornalero, recolector"),
+    MILITAR: ("Fuerzas militares", "ejército, armada, fuerza aérea"),
+}
+CAMPOS = ["edad", "sexo", "estado_civil", "nivel_educativo", "sabe_leer_escribir", "asiste_institucion_educ",
+          "area_titulo_campo_amplio", "departamento", "zona", "tipo_contrato", "lugar_trabajo",
+          "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "minutos_desplazamiento"]
+CLAVES = {"edad": "m_edad", "sexo": "m_sexo", "estado_civil": "m_civil", "nivel_educativo": "m_nivel",
+          "sabe_leer_escribir": "m_leer", "asiste_institucion_educ": "m_estudia", "area_titulo_campo_amplio": "m_area",
+          "departamento": "m_dep", "zona": "m_zona", "tipo_contrato": "m_contrato", "lugar_trabajo": "m_lugar",
+          "medio_consiguio_empleo": "m_medio", "sector_economico_seccion": "m_sector", "oficio_gran_grupo": "m_oficio",
+          "minutos_desplazamiento": "m_min"}
+ETIQUETAS = {"edad": "Edad", "sexo": "Sexo", "estado_civil": "Estado civil", "nivel_educativo": "Nivel educativo",
+             "sabe_leer_escribir": "Sabe leer y escribir", "asiste_institucion_educ": "Estudia actualmente",
+             "area_titulo_campo_amplio": "Área del título", "departamento": "Departamento", "zona": "Zona",
+             "tipo_contrato": "Contrato", "lugar_trabajo": "Lugar de trabajo", "medio_consiguio_empleo": "Cómo consiguió el empleo",
+             "sector_economico_seccion": "Sector", "oficio_gran_grupo": "Oficio", "minutos_desplazamiento": "Desplazamiento"}
+PASOS = [  # (nombre, titular, introducción, campos que se piden)
+    ("Sobre ti", "Cuéntanos sobre ti", "Empecemos por lo básico.", ["edad", "sexo", "estado_civil"]),
+    ("Educación", "Tu formación", "Cuenta también lo que estás cursando.",
+     ["nivel_educativo", "sabe_leer_escribir", "asiste_institucion_educ", "area_titulo_campo_amplio"]),
+    ("Ubicación", "¿Dónde trabajas?", "Donde trabajas o buscas trabajo.", ["departamento", "zona"]),
+    ("Ocupación", "¿Qué haces?", "Primero el oficio y luego el sector de la empresa.", ["oficio_gran_grupo", "sector_economico_seccion"]),
+    ("Condiciones", "Cómo es tu trabajo", "Lugar, contrato y desplazamiento.",
+     ["lugar_trabajo", "tipo_contrato", "medio_consiguio_empleo", "minutos_desplazamiento"]),
 ]
+MENSAJES_REGLA = {  # texto de las advertencias que devuelve el backend por ID
+    "R-02": "La edad supera los 75 años: hay pocos casos y el resultado es menos confiable.",
+    "R-07": "Casado(a), viudo(a) o separado(a) con menos de 18 años es una combinación poco común.",
+    "R-10": "Trabajas en tu vivienda y el desplazamiento supera 30 minutos: revísalo.",
+    "R-12": "Más de 180 minutos de desplazamiento es un valor atípico.",
+    "R-13": "Ese oficio normalmente exige educación superior.",
+    "R-14": "Ser director o gerente con menos de 20 años es una combinación poco común.",
+    "R-15": "Trabajar en mina o cantera suele corresponder al sector de minas: revisa el sector.",
+    "R-16": "Trabajar en obra suele corresponder al sector de construcción: revisa el sector.",
+    "R-17": "Hogares como empleadores con oficio directivo o profesional es una combinación muy poco común.",
+}
 
 
-def paso(n, titulo, texto, etiqueta=""):
-    tag = f'<span class="tag">{etiqueta}</span>' if etiqueta else ""
-    st.markdown(f'<div class="step"><span class="step-n">{n}</span><span class="step-t">{titulo}</span>{tag}</div>'
-                f'<div class="step-sub">{texto}</div>', unsafe_allow_html=True)
+def etiqueta_sector(v):
+    m = re.match(r"^([A-Z]) - (.*)$", str(v))
+    return f"{m.group(1)} · {m.group(2).capitalize()}" if m else str(v)
 
 
-def predecir(clave):
-    """Punto de integración del modelo: ejecutar la predicción con las variables seleccionadas."""
-    st.session_state[f"predijo_{clave}"] = True
+def etiqueta_area(v):
+    if v == SIN_TITULO:
+        return "Sin título (aún no me gradúo)"
+    t = re.sub(r"^\d\d ", "", v).capitalize()
+    return t.replace("(tic)", "(TIC)")
 
 
-def pagina_modelo(clave, titulo, subtitulo, resultado):
-    encabezado(titulo, subtitulo)
-    izq, der = st.columns([1, 1.7], gap="large")
-    with izq, st.container(key=f"panel_vars_{clave}"):
-        paso(1, "Selecciona las variables",
-             "Describe el perfil que quieres analizar. Cada selector se completará con una variable "
-             "cuando el modelo esté definido.", "Por definir")
-        for i, (nombre, ejemplo) in enumerate(SEGMENTADORES_PENDIENTES):
-            st.selectbox(nombre, [], index=None, placeholder=f"Seleccionar: {ejemplo}",
-                         disabled=True, key=f"{clave}_var_{i}")
-        st.markdown('<hr class="rule">', unsafe_allow_html=True)
-        paso(2, "Ejecuta la predicción", "Cuando hayas elegido las variables, pulsa Predecir.")
-        with st.container(key=f"predecir_{clave}"):
-            st.button("Predecir", key=f"btn_predecir_{clave}", on_click=predecir, args=(clave,))
-    with der, st.container(key=f"panel_result_{clave}"):
-        paso(3, "Revisa los resultados", f"Aquí se mostrará {resultado}.")
-        if st.session_state.get(f"predijo_{clave}"):
-            st.caption("El modelo aún no está conectado, por lo que no se generó ninguna predicción.")
-        st.markdown('<div class="result-empty">Sin resultados todavía</div>', unsafe_allow_html=True)
+def etiqueta_zona(v):
+    return "Cabecera municipal" if v == "Cabecera" else "Zona rural / centro poblado"
+
+
+def mostrar_valor(campo, v):
+    if v is None:
+        return None
+    if campo == "oficio_gran_grupo":
+        return OFICIOS.get(v, (v, ""))[0]
+    return {"sector_economico_seccion": etiqueta_sector, "area_titulo_campo_amplio": etiqueta_area,
+            "zona": etiqueta_zona}.get(campo, str)(v) if campo != "minutos_desplazamiento" else f"{v} min"
+
+
+@st.cache_data(show_spinner=False)
+def opciones_sector(sectores):
+    """Sectores tal como están en la base (texto exacto), sin 'Sin información'."""
+    vals = sorted({str(v) for v in sectores if not str(v).lower().startswith("sin informaci")})
+    return vals
+
+
+OCULTAS = {"Preescolar", "No sabe", "No aplica", "No aplica / No sabe", "Sin información"}   # valores que existen en la base pero no se ofrecen
+
+
+def opciones_base(catalogo, serie):
+    """Opciones de una pregunta tomadas de la base (parquet): respeta el orden del catálogo, solo ofrece lo que existe en los datos
+    y añade cualquier categoría nueva de la base. Si la base no trae la columna, usa el catálogo."""
+    if serie is None:
+        return list(catalogo)
+    presentes = {str(v) for v in serie.dropna().unique()} - OCULTAS
+    if not presentes:
+        return list(catalogo)
+    return [c for c in catalogo if c in presentes] + sorted(presentes - set(catalogo))
+
+
+def catalogos_desde_base(df):
+    col = lambda c: df[c] if c in df.columns else None
+    return {
+        "sexo": opciones_base(["Masculino", "Femenino"], col("sexo")),
+        "estado_civil": opciones_base(ESTADOS_CIVILES, col("estado_civil")),
+        "nivel": opciones_base(NIVELES, col("nivel_educativo")),
+        "departamento": opciones_base(DEPARTAMENTOS, col("departamento")),
+        "contrato": opciones_base(CONTRATOS, col("tipo_contrato")),
+        "lugar": opciones_base(LUGARES, col("lugar_trabajo")),
+        "oficio": opciones_base(list(OFICIOS), col("oficio_gran_grupo")),
+    }
+
+
+def sector_defensa(sectores):
+    return next((s for s in sectores if s.startswith("O -")), None)
+
+
+def opciones_area(nivel):
+    if nivel in NIVELES_POSGRADO:
+        return AREAS
+    if nivel in NIVELES_SUPERIOR:
+        return AREAS + [SIN_TITULO]
+    return []
+
+
+def respuestas():
+    g = st.session_state.get
+    return {c: g(CLAVES[c]) for c in CAMPOS}
+
+
+def completar(r, sec_o):
+    """Aplica los autollenados (R-04, R-06, R-08, R-09). Devuelve el perfil tal como lo recibe el modelo."""
+    p = dict(r)
+    nivel = p["nivel_educativo"]
+    if nivel in NIVELES_SIN_TITULO:
+        p["area_titulo_campo_amplio"] = SIN_TITULO
+    if nivel and nivel not in NIVELES_LEER:
+        p["sabe_leer_escribir"] = "Sí"
+    if p["oficio_gran_grupo"] == MILITAR and sec_o:
+        p["sector_economico_seccion"] = sec_o
+    if p["departamento"] in DEP_SOLO_CABECERA:
+        p["zona"] = "Cabecera"
+    return p
+
+
+def validar(p):
+    """Reglas de coherencia. Devuelve una lista de {id, tipo, paso, msg}; 'bloqueo' impide predecir."""
+    out = []
+
+    def add(i, tipo, paso, msg):
+        out.append(dict(id=i, tipo=tipo, paso=paso, msg=msg))
+
+    edad, nivel = p["edad"], p["nivel_educativo"]
+    if edad is not None:
+        if not 15 <= edad <= 85:
+            add("R-01", "bloqueo", 0, "La edad debe estar entre 15 y 85 años.")
+        elif edad > 75:
+            add("R-02", "advertencia", 0, MENSAJES_REGLA["R-02"])
+        if nivel in EDAD_BLOQUEO and edad < EDAD_BLOQUEO[nivel]:
+            add("R-03", "bloqueo", 1, f"Con {edad} años no es posible haber alcanzado el nivel «{nivel}».")
+        elif nivel in EDAD_AVISO and edad < EDAD_AVISO[nivel]:
+            add("R-03", "advertencia", 1, f"Con {edad} años es poco común haber alcanzado el nivel «{nivel}»; el resultado es menos confiable.")
+        if p["estado_civil"] in ("Casado(a)", "Viudo(a)", "Separado(a) / divorciado(a)") and edad < 18:
+            add("R-07", "advertencia", 0, MENSAJES_REGLA["R-07"])
+        if p["oficio_gran_grupo"] == "DIRECTORES Y GERENTES" and edad < 20:
+            add("R-14", "advertencia", 3, MENSAJES_REGLA["R-14"])
+    m = p["minutos_desplazamiento"]
+    if m is not None:
+        if not 0 <= m <= 300:
+            add("R-11", "bloqueo", 4, "Ingresa un tiempo entre 0 y 300 minutos.")
+        elif m > 180:
+            add("R-12", "advertencia", 4, MENSAJES_REGLA["R-12"])
+        if p["lugar_trabajo"] == "En vivienda propia" and m > 30:
+            add("R-10", "advertencia", 4, MENSAJES_REGLA["R-10"])
+    if p["oficio_gran_grupo"] == "PROFESIONALES, CIENTÍFICOS E INTELECTUALES" and nivel in NIVELES[:5]:
+        add("R-13", "advertencia", 3, MENSAJES_REGLA["R-13"])
+    sector = p["sector_economico_seccion"] or ""
+    if p["lugar_trabajo"] == "En mina o cantera" and sector and not sector.startswith("B -"):
+        add("R-15", "advertencia", 4, MENSAJES_REGLA["R-15"])
+    if p["lugar_trabajo"] == "En obra de construcción" and sector and not sector.startswith("F -"):
+        add("R-16", "advertencia", 4, MENSAJES_REGLA["R-16"])
+    if sector.startswith("T -") and p["oficio_gran_grupo"] in ("DIRECTORES Y GERENTES", "PROFESIONALES, CIENTÍFICOS E INTELECTUALES"):
+        add("R-17", "advertencia", 3, MENSAJES_REGLA["R-17"])
+    return out
+
+
+def sanear(sectores, sec_o):
+    """Mantiene coherentes los campos 'hijo' cuando cambia un campo 'padre' (se ejecuta antes de dibujar los controles)."""
+    ss = st.session_state
+    if ss.get("m_area") not in opciones_area(ss.get("m_nivel")):
+        ss["m_area"] = None
+    if ss.get("m_dep") in DEP_SOLO_CABECERA:
+        ss["m_zona"] = "Cabecera"
+    if ss.get("m_oficio") == MILITAR and sec_o:
+        ss["m_sector"] = sec_o
+    if ss.get("m_sector") is not None and ss["m_sector"] not in sectores:
+        ss["m_sector"] = None
+
+
+def al_cambiar_lugar():
+    if st.session_state.get("m_lugar") == "En vivienda propia":   # R-10: se propone 0 minutos (editable)
+        st.session_state["m_min"] = 0
+
+
+def llamar_modelo(payload):
+    """Punto de integración con el backend. Debe devolver
+    {"probabilidad_formal": 0.91, "ingreso_mediana": 4200000, "ingreso_rango_80": [bajo, alto], "advertencias": ["R-14"]}.
+    Devuelve None mientras el modelo no esté conectado."""
+    return None
+
+
+def predecir_perfil(payload):
+    st.session_state["m_resultado"] = {"payload": payload, "respuesta": llamar_modelo(payload)}
+
+
+def paso_mas():
+    st.session_state["m_paso"] = min(st.session_state.get("m_paso", 0) + 1, len(PASOS) - 1)
+
+
+def paso_menos():
+    st.session_state["m_paso"] = max(st.session_state.get("m_paso", 0) - 1, 0)
+
+
+def reiniciar_encuesta():
+    for k in [*CLAVES.values(), "m_paso", "m_resultado"]:
+        st.session_state.pop(k, None)
+
+
+def pregunta(texto, ayuda=""):
+    html(f'<div class="sv-q">{texto}</div>' + (f'<div class="sv-h">{ayuda}</div>' if ayuda else ""))
+
+
+def aviso(m):
+    etiqueta = "Revisa" if m["tipo"] == "bloqueo" else "Aviso"
+    html(f'<div class="sv-msg {m["tipo"]}"><b>{etiqueta}:</b> {escape(m["msg"])}</div>')
+
+
+def nota(texto):
+    html(f'<div class="sv-h">{escape(texto)}</div>')
+
+
+def controles_paso(paso, sectores, sec_o, cat):
+    r = respuestas()
+    nivel = r["nivel_educativo"]
+    if paso == 0:
+        pregunta("¿Cuántos años tienes?", "Entre 15 y 85 años.")
+        st.number_input("Edad", min_value=15, max_value=85, value=None, step=1, placeholder="Ej. 29", key="m_edad", label_visibility="collapsed")
+        pregunta("¿Cuál es tu sexo?")
+        st.radio("Sexo", cat["sexo"], index=None, horizontal=True, key="m_sexo", label_visibility="collapsed")
+        pregunta("¿Cuál es tu estado civil?")
+        st.selectbox("Estado civil", cat["estado_civil"], index=None, placeholder="Selecciona una opción", key="m_civil", label_visibility="collapsed")
+    elif paso == 1:
+        pregunta("¿Cuál es el nivel educativo más alto que has alcanzado?", "Terminado o en curso.")
+        st.selectbox("Nivel educativo", cat["nivel"], index=None, placeholder="Selecciona tu nivel", key="m_nivel", label_visibility="collapsed")
+        if nivel in NIVELES_LEER:
+            pregunta("¿Sabes leer y escribir?")
+            st.radio("Sabe leer y escribir", ["Sí", "No"], index=None, horizontal=True, key="m_leer", label_visibility="collapsed")
+        pregunta("¿Estás estudiando actualmente?")
+        st.radio("Asiste a una institución educativa", ["Sí", "No"], index=None, horizontal=True, key="m_estudia", label_visibility="collapsed")
+        if nivel in NIVELES_SUPERIOR + NIVELES_POSGRADO:
+            pregunta("¿De qué área es tu título de educación superior?",
+                     "Si aún no te has graduado, elige «Sin título (aún no me gradúo)»." if nivel in NIVELES_SUPERIOR else "Es obligatorio para posgrados.")
+            st.selectbox("Área del título", opciones_area(nivel), index=None, placeholder="Selecciona el área",
+                         format_func=etiqueta_area, key="m_area", label_visibility="collapsed")
+        elif nivel:
+            nota("No necesitas indicar el área del título: la completamos como «Sin título».")
+    elif paso == 2:
+        pregunta("¿En qué departamento trabajas o buscas trabajo?", "Puedes escribir para buscar.")
+        st.selectbox("Departamento", cat["departamento"], index=None, placeholder="Selecciona el departamento", key="m_dep", label_visibility="collapsed")
+        pregunta("¿Vives en la cabecera municipal o en zona rural?")
+        solo = r["departamento"] in DEP_SOLO_CABECERA
+        st.radio("Zona", ["Cabecera", "Resto"], index=None, horizontal=True, key="m_zona", format_func=etiqueta_zona,
+                 disabled=solo, label_visibility="collapsed")
+        if solo:
+            nota("En este departamento la encuesta solo cubre cabeceras, así que lo completamos por ti.")
+    elif paso == 3:
+        pregunta("¿Qué tipo de oficio haces?", "Elige el que más se parezca a tu trabajo.")
+        st.selectbox("Oficio", cat["oficio"], index=None, placeholder="Selecciona tu tipo de oficio",
+                     format_func=lambda v: OFICIOS[v][0], key="m_oficio", label_visibility="collapsed")
+        if r["oficio_gran_grupo"]:
+            nota("Por ejemplo: " + OFICIOS[r["oficio_gran_grupo"]][1] + ".")
+        pregunta("¿A qué sector pertenece la empresa donde trabajas?", "Puedes escribir para buscar.")
+        auto = r["oficio_gran_grupo"] == MILITAR and sec_o
+        st.selectbox("Sector", sectores, index=None, placeholder="Selecciona el sector", format_func=etiqueta_sector,
+                     key="m_sector", disabled=bool(auto), label_visibility="collapsed")
+        if auto:
+            nota("Para Fuerzas Militares completamos el sector de administración pública y defensa.")
+    else:
+        pregunta("¿Dónde realizas tu trabajo?")
+        st.selectbox("Lugar de trabajo", cat["lugar"], index=None, placeholder="Selecciona el lugar", key="m_lugar",
+                     on_change=al_cambiar_lugar, label_visibility="collapsed")
+        pregunta("¿Qué tipo de contrato tienes?", "El actual o el que esperas.")
+        st.radio("Tipo de contrato", cat["contrato"], index=None, horizontal=True, key="m_contrato", label_visibility="collapsed")
+        pregunta("¿Cómo conseguiste (o buscas) el empleo?")
+        st.selectbox("Medio", MEDIOS, index=None, placeholder="Selecciona una opción", key="m_medio", label_visibility="collapsed")
+        pregunta("¿Cuántos minutos tardas en llegar al trabajo?", "Solo ida, entre 0 y 300. Si trabajas en tu vivienda, es 0.")
+        st.number_input("Minutos de desplazamiento", min_value=0, max_value=300, value=None, step=5, placeholder="Ej. 45",
+                        key="m_min", label_visibility="collapsed")
+
+
+def resultado_modelo(resp):
+    """Dibuja la respuesta del backend (forma definida en la especificación)."""
+    p, (bajo, alto) = resp["probabilidad_formal"], resp["ingreso_rango_80"]
+    html(f'<div class="rs"><div class="rs-l">Probabilidad de empleo formal pleno</div>'
+         f'<div class="rs-v" style="color:{PRIMARY}">{fmt_pct(p)}</div>'
+         f'<div class="d-stack"><span style="width:{p * 100:.1f}%;background:{PRIMARY}"></span><span style="flex:1;background:{NOFORMAL}"></span></div></div>'
+         f'<div class="rs"><div class="rs-l">Ingreso laboral mensual típico (mediana)</div>'
+         f'<div class="rs-v" style="color:{ACCENT_TEXT}">{fmt_cop(resp["ingreso_mediana"])}</div>'
+         f'<div class="rs-r">Rango del 80%: {fmt_cop(bajo)} – {fmt_cop(alto)}</div>'
+         f'<div class="sv-h">Pesos nominales de 2025. El modelo tiende a subestimar los ingresos altos; por eso el rango acompaña siempre al valor central.</div></div>')
+    for i in resp.get("advertencias", []):
+        aviso(dict(tipo="advertencia", msg=MENSAJES_REGLA.get(i, f"El perfil activó la regla {i}.")))
+
+
+def pagina_modelo(df_raw):
+    ss = st.session_state
+    for k in [k for k in ss if k in (*CLAVES.values(), "m_paso", "m_resultado")]:   # conserva las respuestas de los pasos que no se están dibujando
+        ss[k] = ss[k]
+    sectores = opciones_sector(tuple(df_raw["sector_economico_seccion"].dropna().astype(str).unique()))
+    sec_o = sector_defensa(sectores)
+    cat = catalogos_desde_base(df_raw)
+    sanear(sectores, sec_o)
+    paso = ss.setdefault("m_paso", 0)
+
+    encabezado("Modelo predictivo", "Responde unas preguntas sobre tu perfil y estima tu probabilidad de empleo formal y tu ingreso laboral.")
+    izq, der = st.columns([1.5, 1], gap="large")
+
+    r = respuestas()
+    p = completar(r, sec_o)
+    avisos = validar(p)
+    faltan = [c for c in CAMPOS if p[c] is None]
+    bloqueos = [m for m in avisos if m["tipo"] == "bloqueo"]
+    listo = not faltan and not bloqueos
+
+    with izq, st.container(key="card_encuesta"):
+        segmentos = "".join(
+            f'<div class="sv-step {"on" if i == paso else "done" if i < paso else ""}"><b>Paso {i + 1}</b>{n}</div>'
+            for i, (n, *_ ) in enumerate(PASOS))
+        html(f'<div class="sv-steps">{segmentos}</div>')
+        _, titular, intro, campos = PASOS[paso]
+        html(f'<div><div class="sv-title">{titular}</div><div class="sv-lead">{intro}</div></div>')
+        html('<div class="sv-tip"><b>Si no ves tu situación exacta,</b> elige la opción que más se acerque a ella.</div>')
+        controles_paso(paso, sectores, sec_o, cat)
+        r = respuestas()
+        p = completar(r, sec_o)
+        avisos = validar(p)
+        bloqueos = [m for m in avisos if m["tipo"] == "bloqueo"]
+        for m in avisos:
+            if m["paso"] == paso:
+                aviso(m)
+        paso_completo = all(p[c] is not None for c in campos) and not any(m["paso"] == paso for m in bloqueos)
+        c1, c2 = st.columns(2, vertical_alignment="center")
+        with c1, st.container(key="svback"):
+            if paso > 0:
+                st.button("←  Atrás", key="sv_back_btn", on_click=paso_menos)
+        with c2, st.container(key="svnext"):
+            if paso < len(PASOS) - 1:
+                st.button("Siguiente  →", key="sv_next_btn", on_click=paso_mas, disabled=not paso_completo)
+            else:
+                html('<div class="sv-h" style="text-align:right">Cuando termines, pulsa «Predecir».</div>')
+
+    listo = not [c for c in CAMPOS if p[c] is None] and not bloqueos
+    with der:
+        with st.container(key="card_perfil"):
+            n = sum(p[c] is not None for c in CAMPOS)
+            html(f'<div class="card-head"><div class="eyebrow">Tu perfil</div><div class="card-sub" style="margin:0">{n} de {len(CAMPOS)} respuestas</div></div>')
+            filas = "".join(
+                f'<div class="pf-row"><span>{ETIQUETAS[c]}</span><b class="{"" if p[c] is not None else "vacio"}">'
+                f'{escape(mostrar_valor(c, p[c])) if p[c] is not None else "—"}'
+                f'{"<i>auto</i>" if p[c] is not None and r[c] is None else ""}</b></div>' for c in CAMPOS)
+            html(f'<div>{filas}</div>')
+            for m in avisos:
+                aviso(m)
+            with st.container(key="predecir_modelo"):
+                payload = {c: p[c] for c in CAMPOS}
+                st.button("Predecir", key="btn_predecir_modelo", disabled=not listo, on_click=predecir_perfil, args=(payload,))
+            if not listo:
+                nota("Completa las preguntas y resuelve las revisiones para poder predecir.")
+            with st.container(key="svreset"):
+                st.button("Empezar de nuevo", key="sv_reiniciar", on_click=reiniciar_encuesta)
+        with st.container(key="card_resultado"):
+            html('<div class="eyebrow">Resultado</div>')
+            res = ss.get("m_resultado")
+            if not res or res["payload"] != payload:
+                html('<div class="rs-empty">Aquí verás tu probabilidad de empleo formal y tu ingreso estimado.'
+                     + (' <br>Tus respuestas cambiaron: vuelve a pulsar «Predecir».' if res else '') + '</div>')
+            elif res["respuesta"] is None:
+                html('<div class="rs-empty">El modelo aún no está conectado, por lo que no se generó ninguna predicción.</div>')
+                with st.expander("Ver los datos que se enviarán al modelo"):
+                    st.json(res["payload"])
+            else:
+                resultado_modelo(res["respuesta"])
     pie()
 
 
@@ -928,12 +1339,8 @@ elif pagina == "formalidad":
     pagina_formalidad(df_raw)
 elif pagina == "ingresos":
     pagina_ingresos(df_raw)
-elif pagina == "salario":
-    pagina_modelo("salario", "Modelo predictivo ingresos",
-                  "Estimación del ingreso laboral según el perfil de la persona.", "la proyección de salario")
 else:
-    pagina_modelo("empleo", "Modelo predictivo formalidad",
-                  "Estimación de la probabilidad de conseguir un empleo formal.", "la probabilidad de empleo formal")
+    pagina_modelo(df_raw)
 
 if pagina != "inicio":
     asistente()
