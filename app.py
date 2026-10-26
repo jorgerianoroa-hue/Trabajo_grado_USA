@@ -5,6 +5,7 @@ Ejecutar con:  streamlit run app.py
 
 import base64
 import re
+import time
 from html import escape
 from pathlib import Path
 from string import Template
@@ -12,6 +13,7 @@ from string import Template
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="Mercado laboral de Colombia",
@@ -104,8 +106,8 @@ CSS = Template("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap');
 html, body, [class*="css"], .stApp { font-family:'$F_BODY',sans-serif; color:$TEXT; }
 .stApp { background:$BG; }
-.block-container { max-width:1500px; padding:28px 32px 56px; }
-header[data-testid="stHeader"] { background:transparent; }
+.block-container { max-width:none; padding:24px clamp(16px, 2.4vw, 44px) 56px; }
+header[data-testid="stHeader"], [data-testid="stDecoration"], [data-testid="stStatusWidget"] { display:none !important; }
 footer { visibility:hidden; }
 [data-testid="stToolbar"] { display:none; }
 [data-testid="stVerticalBlock"] { gap:1rem; }
@@ -159,7 +161,7 @@ div[class*="st-key-chip_"] button:hover { background:#DCEAE6; color:$PRIMARY_DAR
 .st-key-clearall button:hover { background:transparent; color:$ACCENT_TEXT; }
 
 /* KPIs */
-.kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:1rem; }
 .kpi { background:$SURFACE; border:1px solid $BORDER; border-radius:12px; padding:16px 18px; display:flex; flex-direction:column; gap:4px; }
 .kpi-l { display:flex; align-items:center; gap:6px; font-size:13px; color:$MUTED2; }
 .kpi-v { font-size:32px; font-weight:600; letter-spacing:-0.02em; line-height:1.15; font-variant-numeric:tabular-nums; }
@@ -291,6 +293,99 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 @media (min-width:1100px) { .block-container:has(.st-key-chat):not(:has(.cover-content)) { max-width:none; padding-right:412px; } }
 @media (max-width:640px) { .st-key-chat { width:100vw !important; } }
 
+/* Encuesta del modelo predictivo */
+.sv-steps { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+.sv-step { border-top:3px solid $HAIRLINE; padding-top:8px; font-size:13px; color:$MUTED; }
+.sv-step b { display:block; font-size:11px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; }
+.sv-step.done { border-top-color:$NOFORMAL; color:$MUTED2; }
+.sv-step.on { border-top-color:$PRIMARY_DARK; color:$PRIMARY_DARK; font-weight:600; }
+.sv-tip { background:$TINT; color:$TEAL_TEXT; border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.4; }
+.sv-title { font-size:26px; font-weight:600; letter-spacing:-0.01em; line-height:1.2; margin-top:8px; }
+.sv-lead { font-size:14px; color:$MUTED; margin-top:4px; }
+.mv-tabs { display:flex; justify-content:center; gap:8px; margin:-4px 0 18px; }
+.mv-tabs span { font-size:13px; font-weight:500; color:$MUTED; padding:6px 14px; border-radius:999px; background:$TRACK; }
+.mv-tabs span.on { background:$PRIMARY; color:#FFFFFF; }
+.pf-g { font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:$MUTED; margin:16px 0 2px; }
+.sv-q { font-size:17px; font-weight:600; margin-top:14px; animation:svEntra .4s ease both; }
+@keyframes svEntra { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+.sv-h { font-size:13px; color:$MUTED; margin-top:2px; }
+.sv-msg { border-radius:8px; padding:10px 14px; font-size:13px; line-height:1.5; margin-top:6px; }
+.sv-msg.advertencia { background:#FFF7EE; border:1px solid #F3DCC2; color:#4A2F14; }
+.sv-msg.bloqueo { background:#FBEAE5; border:1px solid #E8B9AA; color:#7A2410; }
+div[class*="st-key-card_encuesta"] { padding:28px; gap:14px; }
+div[class*="st-key-card_encuesta"] [data-baseweb="select"] > div, div[class*="st-key-card_encuesta"] [data-baseweb="input"] {
+    background:$FIELD !important; border:1px solid $BORDER; border-radius:8px; min-height:44px; font-size:15px; }
+div[class*="st-key-card_encuesta"] [data-testid="stNumberInput"] { max-width:260px; }
+div[class*="st-key-card_encuesta"] [data-testid="stRadio"] label p { font-size:15px; }
+.st-key-svnext { display:flex; justify-content:flex-end; }
+.st-key-svnext button { height:44px; min-height:0; padding:0 22px; border:none; border-radius:999px; background:$PRIMARY; color:#FFFFFF; font-size:14px; font-weight:500; width:auto; transition:background .15s; }
+.st-key-svnext button:hover { background:#0E3340; color:#FFFFFF; }
+.st-key-svnext button:disabled { background:$TRACK; color:$MUTED; opacity:1; }
+.st-key-svnext button p { color:inherit; }
+.st-key-svback button, .st-key-svreset button { min-height:0; padding:4px 0; border:none; background:transparent; color:$MUTED2; font-size:14px; width:auto; }
+.st-key-svback button:hover, .st-key-svreset button:hover { color:$PRIMARY; background:transparent; }
+div[class*="st-key-card_perfil"], div[class*="st-key-card_resultado"] { padding:20px; gap:12px; }
+.pf-row { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-top:1px solid $HAIRLINE; font-size:13px; color:$MUTED2; }
+.pf-row b { font-weight:500; color:$TEXT; text-align:right; }
+.pf-row b.vacio { color:#B5BDC2; }
+.pf-row i { font-style:normal; font-size:10px; color:$ACCENT_TEXT; border:1px solid $ACCENT; border-radius:999px; padding:0 6px; margin-left:6px; }
+div[class*="st-key-predecir_"] button { width:100%; height:48px; background:$PRIMARY; color:#FFFFFF; border:none; border-radius:8px; font-size:16px; font-weight:600; transition:background .15s; }
+div[class*="st-key-predecir_"] button:hover { background:#0E3340; color:#FFFFFF; }
+div[class*="st-key-predecir_"] button:disabled { background:$TRACK; color:$MUTED; opacity:1; }
+div[class*="st-key-predecir_"] button p { color:inherit; font-size:inherit; font-weight:inherit; }
+.rs { display:flex; flex-direction:column; gap:6px; padding:6px 0 10px; }
+.rs-l { font-size:13px; color:$MUTED2; }
+.rs-v { font-size:36px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; line-height:1.1; }
+.rs-r { font-size:14px; color:$TEXT; font-weight:500; }
+.rs-empty { padding:28px 8px; text-align:center; color:$MUTED; font-size:14px; line-height:1.6; }
+
+/* Más espacio para las gráficas: cabecera, filtros y cifras más compactos */
+@media (min-width:901px) {
+    .block-container { padding-top:12px; }
+    [data-testid="stVerticalBlock"] { gap:.7rem; }
+    .page-title { font-size:26px; } .page-sub { margin-top:2px; font-size:14px; }
+    .st-key-filters { padding:12px 18px; gap:8px; }
+    .st-key-filters [data-baseweb="select"] > div { min-height:36px; }
+    .kpi { padding:10px 16px; gap:2px; } .kpi-v { font-size:26px; } .kpi-v.sm { font-size:20px; }
+    .insight { padding:8px 16px; font-size:13.5px; }
+}
+/* Responsive: del escritorio ancho al celular */
+@media (max-width:1100px) {
+    .stMain [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] [class*="st-key-card_"]) { flex-wrap:wrap; row-gap:1rem; }
+    .stMain [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] [class*="st-key-card_"]) > [data-testid="stColumn"] { flex:1 1 100% !important; width:100% !important; min-width:100% !important; }
+    .stMain [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] [class*="st-key-card_encuesta"], > [data-testid="stColumn"] [class*="st-key-card_perfil"], > [data-testid="stColumn"] [class*="st-key-card_resultado"]) > [data-testid="stColumn"]:not(:has([class*="st-key-card_"])) { display:none; }
+    .st-key-filters [data-testid="stHorizontalBlock"] { flex-wrap:wrap; row-gap:.6rem; }
+    .st-key-filters [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] { flex:1 1 30% !important; min-width:30% !important; }
+    .sv-steps { gap:6px; }
+}
+@media (max-width:900px) {
+    .block-container { padding:14px 14px 32px; }
+    .st-key-nav_items [data-testid="stHorizontalBlock"] { flex-wrap:wrap; gap:6px 18px; justify-content:flex-start; }
+    .page-title { font-size:26px; }
+    .rk-ax, .rk-row { grid-template-columns:24px minmax(70px, 120px) minmax(0, 1fr) 62px; gap:8px; }
+    .rk-ti .rk-ax, .rk-ti .rk-row { grid-template-columns:24px minmax(70px, 120px) minmax(0, 1fr) 84px; }
+    .rk-ti .rk-ax > :last-child, .rk-ti .rk-row > :last-child { display:none; }
+    .d-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width:640px) {
+    .st-key-filters [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] { flex:1 1 46% !important; min-width:46% !important; }
+    .stTabs [data-baseweb="tab-list"] { overflow-x:auto; }
+    .sv-steps { grid-template-columns:repeat(5, 1fr); }
+    .sv-step { font-size:0; } .sv-step b { font-size:10px; }
+    div[class*="st-key-card_encuesta"] { padding:18px; }
+    .kpis { grid-template-columns:1fr 1fr; }
+    .kpi-v { font-size:26px; }
+    .mv-tabs span { padding:5px 10px; font-size:12px; }
+    .rs-v { font-size:30px; }
+    .st-key-fab { right:14px; bottom:14px; }
+    .st-key-fab button { width:58px; height:58px; }
+    .st-key-fab button::before { right:70px; max-width:56vw; }
+}
+</style>
+""")
+
+CSS_PORTADA = Template("""
+<style>
 /* Portada (modo oscuro): el mapa es el fondo de toda la app mientras se muestra la portada */
 .stApp:has(.cover-content) { background-color:#0B1D27; background-image:radial-gradient(ellipse at center, #14333F 0%, #0B1D27 68%);
     timeline-scope:--pg; }
@@ -364,66 +459,26 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 @media (min-width:1100px) { .block-container:has(.cover-content) { padding-right:32px; } }
 @media (max-width:900px) { .cover-title { font-size:2.8rem; } .cover-content { padding-top:12vh; } }
 
-/* Encuesta del modelo predictivo */
-.sv-steps { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
-.sv-step { border-top:3px solid $HAIRLINE; padding-top:8px; font-size:13px; color:$MUTED; }
-.sv-step b { display:block; font-size:11px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; }
-.sv-step.done { border-top-color:$NOFORMAL; color:$MUTED2; }
-.sv-step.on { border-top-color:$PRIMARY_DARK; color:$PRIMARY_DARK; font-weight:600; }
-.sv-tip { background:$TINT; color:$TEAL_TEXT; border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.4; }
-.sv-title { font-size:26px; font-weight:600; letter-spacing:-0.01em; line-height:1.2; margin-top:8px; }
-.sv-lead { font-size:14px; color:$MUTED; margin-top:4px; }
-.mv-tabs { display:flex; justify-content:center; gap:8px; margin:-4px 0 18px; }
-.mv-tabs span { font-size:13px; font-weight:500; color:$MUTED; padding:6px 14px; border-radius:999px; background:$TRACK; }
-.mv-tabs span.on { background:$PRIMARY; color:#FFFFFF; }
-.pf-g { font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:$MUTED; margin:16px 0 2px; }
-.sv-q { font-size:17px; font-weight:600; margin-top:14px; animation:svEntra .4s ease both; }
-@keyframes svEntra { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
-.sv-h { font-size:13px; color:$MUTED; margin-top:2px; }
-.sv-msg { border-radius:8px; padding:10px 14px; font-size:13px; line-height:1.5; margin-top:6px; }
-.sv-msg.advertencia { background:#FFF7EE; border:1px solid #F3DCC2; color:#4A2F14; }
-.sv-msg.bloqueo { background:#FBEAE5; border:1px solid #E8B9AA; color:#7A2410; }
-div[class*="st-key-card_encuesta"] { padding:28px; gap:14px; }
-div[class*="st-key-card_encuesta"] [data-baseweb="select"] > div, div[class*="st-key-card_encuesta"] [data-baseweb="input"] {
-    background:$FIELD !important; border:1px solid $BORDER; border-radius:8px; min-height:44px; font-size:15px; }
-div[class*="st-key-card_encuesta"] [data-testid="stNumberInput"] { max-width:260px; }
-div[class*="st-key-card_encuesta"] [data-testid="stRadio"] label p { font-size:15px; }
-.st-key-svnext { display:flex; justify-content:flex-end; }
-.st-key-svnext button { height:44px; min-height:0; padding:0 22px; border:none; border-radius:999px; background:$PRIMARY; color:#FFFFFF; font-size:14px; font-weight:500; width:auto; transition:background .15s; }
-.st-key-svnext button:hover { background:#0E3340; color:#FFFFFF; }
-.st-key-svnext button:disabled { background:$TRACK; color:$MUTED; opacity:1; }
-.st-key-svnext button p { color:inherit; }
-.st-key-svback button, .st-key-svreset button { min-height:0; padding:4px 0; border:none; background:transparent; color:$MUTED2; font-size:14px; width:auto; }
-.st-key-svback button:hover, .st-key-svreset button:hover { color:$PRIMARY; background:transparent; }
-div[class*="st-key-card_perfil"], div[class*="st-key-card_resultado"] { padding:20px; gap:12px; }
-.pf-row { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-top:1px solid $HAIRLINE; font-size:13px; color:$MUTED2; }
-.pf-row b { font-weight:500; color:$TEXT; text-align:right; }
-.pf-row b.vacio { color:#B5BDC2; }
-.pf-row i { font-style:normal; font-size:10px; color:$ACCENT_TEXT; border:1px solid $ACCENT; border-radius:999px; padding:0 6px; margin-left:6px; }
-div[class*="st-key-predecir_"] button { width:100%; height:48px; background:$PRIMARY; color:#FFFFFF; border:none; border-radius:8px; font-size:16px; font-weight:600; transition:background .15s; }
-div[class*="st-key-predecir_"] button:hover { background:#0E3340; color:#FFFFFF; }
-div[class*="st-key-predecir_"] button:disabled { background:$TRACK; color:$MUTED; opacity:1; }
-div[class*="st-key-predecir_"] button p { color:inherit; font-size:inherit; font-weight:inherit; }
-.rs { display:flex; flex-direction:column; gap:6px; padding:6px 0 10px; }
-.rs-l { font-size:13px; color:$MUTED2; }
-.rs-v { font-size:36px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; line-height:1.1; }
-.rs-r { font-size:14px; color:$TEXT; font-weight:500; }
-.rs-empty { padding:28px 8px; text-align:center; color:$MUTED; font-size:14px; line-height:1.6; }
-
-@media (max-width:900px) {
-    .block-container { padding:16px 16px 32px; }
-    .st-key-nav_items [data-testid="stHorizontalBlock"] { flex-wrap:wrap; gap:6px 18px; justify-content:flex-start; }
-}
 </style>
 """)
 
 
+
+TOKENS = dict(
+    F_BODY=F_BODY, F_DISPLAY=F_DISPLAY, TEXT=TEXT, MUTED=MUTED, MUTED2=MUTED2, BG=BG, SURFACE=SURFACE,
+    PRIMARY=PRIMARY, PRIMARY_DARK=PRIMARY_DARK, NOFORMAL=NOFORMAL, ACCENT=ACCENT, ACCENT_TEXT=ACCENT_TEXT,
+    BORDER=BORDER, HAIRLINE=HAIRLINE, FIELD=FIELD, TINT=TINT, TRACK=TRACK, TEAL_TEXT=TEAL_TEXT, ROBOT_URI=ROBOT_URI)
+
+
 def inject_css():
-    st.markdown(CSS.safe_substitute(
-        F_BODY=F_BODY, F_DISPLAY=F_DISPLAY, TEXT=TEXT, MUTED=MUTED, MUTED2=MUTED2, BG=BG, SURFACE=SURFACE,
-        PRIMARY=PRIMARY, PRIMARY_DARK=PRIMARY_DARK, NOFORMAL=NOFORMAL, ACCENT=ACCENT, ACCENT_TEXT=ACCENT_TEXT,
-        BORDER=BORDER, HAIRLINE=HAIRLINE, FIELD=FIELD, TINT=TINT, TRACK=TRACK, MAPA_URI=MAPA_URI, ROBOT_URI=ROBOT_URI, MAPA_BOGOTA=MAPA_BOGOTA, MAPA_MEDELLIN=MAPA_MEDELLIN, MAPA_CARTAGENA=MAPA_CARTAGENA, ART_FORMAL=ART_FORMAL, ART_INGRESOS=ART_INGRESOS, ART_MODELO=ART_MODELO,
-    ), unsafe_allow_html=True)
+    """CSS común (ligero). El CSS de la portada, con los mapas e ilustraciones, solo se envía en la portada."""
+    st.markdown(CSS.safe_substitute(TOKENS), unsafe_allow_html=True)
+
+
+def inject_css_portada():
+    st.markdown(CSS_PORTADA.safe_substitute(
+        TOKENS, MAPA_URI=MAPA_URI, MAPA_BOGOTA=MAPA_BOGOTA, MAPA_MEDELLIN=MAPA_MEDELLIN, MAPA_CARTAGENA=MAPA_CARTAGENA,
+        ART_FORMAL=ART_FORMAL, ART_INGRESOS=ART_INGRESOS, ART_MODELO=ART_MODELO), unsafe_allow_html=True)
 
 
 def html(s):
@@ -464,7 +519,7 @@ def fmt_corto(x):
 # ---------------------------------------------------------------------------
 # CARGA DE DATOS Y MEDIDAS (sin cambios de lógica)
 # ---------------------------------------------------------------------------
-@st.cache_data(show_spinner="Cargando datos...")
+@st.cache_resource(show_spinner="Cargando datos...")
 def load_data(path: Path) -> pd.DataFrame:
     df = pd.read_parquet(path)
     df["Mes Letras"] = pd.Categorical(
@@ -475,6 +530,7 @@ def load_data(path: Path) -> pd.DataFrame:
               "tipo_contrato", "posicion_ocupacional", "lugar_trabajo",
               "sector_economico_seccion", "oficio_gran_grupo"]:
         df[c] = df[c].astype("category")
+    df.attrs = {"fk": (), "n": len(df)}
     return df
 
 
@@ -490,10 +546,23 @@ def promedio_mediana_ingreso(df):
     return df["ingreso_laboral_total"].mean(), df["ingreso_laboral_total"].median()
 
 
-def agrupar(df, dim, col, funcs, por_n=True):
+def _agrupar(df, dim, col, funcs, por_n):
     out = df.groupby(dim, observed=True)[col].agg([*funcs, "count"]).reset_index()
     out.columns = [dim, *funcs, "n"]
     return out.sort_values("n", ascending=False) if por_n else out.sort_values(dim)
+
+
+@st.cache_data(show_spinner=False, max_entries=400)
+def _agrupar_cache(_df, fk, dim, col, funcs, por_n):
+    return _agrupar(_df, dim, col, funcs, por_n)
+
+
+def agrupar(df, dim, col, funcs, por_n=True):
+    """Mismo cálculo de siempre; el resultado se reutiliza mientras no cambien los filtros (se identifica con df.attrs['fk'])."""
+    fk = df.attrs.get("fk")
+    if fk is not None and df.attrs.get("n") == len(df):
+        return _agrupar_cache(df, fk, dim, col, tuple(funcs), por_n).copy()
+    return _agrupar(df, dim, col, funcs, por_n)
 
 
 def datos_ranking(df, dim, tipo):
@@ -804,6 +873,7 @@ def bloque_graficos(df, tipo, pagina, ref, ref2, nac):
 # ---------------------------------------------------------------------------
 def ir(pagina):
     st.session_state.page = pagina
+    st.session_state["_subir"] = True
 
 
 NAV = [("formalidad", "Análisis descriptivo formalidad"), ("ingresos", "Análisis descriptivo ingresos"),
@@ -831,16 +901,29 @@ FILTROS = [("anio", "Año"), ("Mes Letras", "Mes"), ("departamento", "Departamen
 
 def aplicar_filtros(df_raw, clave):
     df = df_raw
+    fk = []
     for c, _ in FILTROS:
         valores = st.session_state.get(f"f_{clave}_{c}") or []
         if valores:
             df = df[df[c].isin(valores)]
+            fk.append((c, tuple(sorted(map(str, valores)))))
+    if fk:
+        df.attrs = {"fk": tuple(fk), "n": len(df)}
     return df
 
 
 def limpiar_filtros(claves):
     for k in claves:
         st.session_state[k] = []
+
+
+@st.cache_data(show_spinner=False)
+def _opciones_filtro(_df, c):
+    return sorted(_df[c].dropna().unique().tolist(), key=str)
+
+
+def opciones_filtro(c):
+    return _opciones_filtro(load_data(DATA_PATH), c)
 
 
 def panel_filtros(df_raw, clave):
@@ -852,7 +935,7 @@ def panel_filtros(df_raw, clave):
              f'<span class="fh-s">· Combina uno o varios filtros; todas las cifras de la página se recalculan.</span></div>'
              f'<span class="fh-c"><strong>{fmt_n(len(df))}</strong> de {fmt_n(len(df_raw))} registros</span></div>')
         for col, (c, etiqueta) in zip(st.columns(len(FILTROS), gap="small"), FILTROS):
-            opciones = MESES_ORDEN if c == "Mes Letras" else sorted(df_raw[c].dropna().unique().tolist(), key=str)
+            opciones = MESES_ORDEN if c == "Mes Letras" else opciones_filtro(c)
             col.multiselect(etiqueta, opciones, placeholder="Todos", key=claves[c])
         activos = [(c, e, st.session_state.get(claves[c])) for c, e in FILTROS if st.session_state.get(claves[c])]
         if activos:
@@ -998,6 +1081,7 @@ def pagina_inicio(df_raw=None):
          "Responde unas preguntas sobre tu perfil y descubre tu probabilidad de empleo formal y tu ingreso esperado.",
          "Empezar la encuesta", "modelo"),
     ]
+    inject_css_portada()
     n = lambda v: f"{int(v):,}".replace(",", ".")
     stats = ""
     if df_raw is not None and len(df_raw):
@@ -1327,10 +1411,12 @@ def predecir_perfil(payload):
 
 
 def paso_mas():
+    st.session_state["_subir"] = True
     st.session_state["m_paso"] = min(st.session_state.get("m_paso", 0) + 1, len(PASOS) - 1)
 
 
 def paso_menos():
+    st.session_state["_subir"] = True
     st.session_state["m_paso"] = max(st.session_state.get("m_paso", 0) - 1, 0)
 
 
@@ -1437,23 +1523,33 @@ def resultado_modelo(resp):
 
 
 def ir_vista(vista, paso=None):
+    st.session_state["_subir"] = True
     st.session_state["m_vista"] = vista
     if paso is not None:
         st.session_state["m_paso"] = paso
 
 
 def predecir_y_mostrar(payload):
+    st.session_state["_subir"] = True
     predecir_perfil(payload)
     st.session_state["m_vista"] = "resultado"
+
+
+@st.cache_data(show_spinner=False)
+def _catalogos_modelo(_df):
+    return opciones_sector(tuple(_df["sector_economico_seccion"].dropna().astype(str).unique())), catalogos_desde_base(_df)
+
+
+def catalogos_modelo(df_raw):
+    return _catalogos_modelo(df_raw)
 
 
 def pagina_modelo(df_raw):
     ss = st.session_state
     for k in [k for k in ss if k in (*CLAVES.values(), "m_paso", "m_resultado", "m_vista")]:   # conserva las respuestas de los pasos que no se están dibujando
         ss[k] = ss[k]
-    sectores = opciones_sector(tuple(df_raw["sector_economico_seccion"].dropna().astype(str).unique()))
+    sectores, cat = catalogos_modelo(df_raw)
     sec_o = sector_defensa(sectores)
-    cat = catalogos_desde_base(df_raw)
     sanear(sectores, sec_o)
     paso = ss.setdefault("m_paso", 0)
     vista = ss.setdefault("m_vista", "preguntas")
@@ -1562,7 +1658,20 @@ elif pagina == "ingresos":
 else:
     pagina_modelo(df_raw)
 
-if st.session_state.get("chat_abierto"):
-    asistente()
-else:
-    flotante()
+@st.fragment
+def widget_asistente():
+    """Icono flotante o chat abierto. Es un fragmento: abrir, cerrar o escribir no vuelve a calcular toda la página."""
+    if st.session_state.get("chat_abierto"):
+        asistente()
+    else:
+        flotante()
+
+
+widget_asistente()
+
+if st.session_state.pop("_subir", False):      # al cambiar de pantalla, volver al inicio de la página
+    _js = f"<script>/*{time.time()}*/const m=window.parent.document.querySelector('[data-testid=\"stMain\"]');if(m)m.scrollTo({{top:0}});</script>"
+    if hasattr(st, "iframe"):
+        st.iframe(_js, height=1)
+    else:
+        components.html(_js, height=0)
