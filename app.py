@@ -44,6 +44,45 @@ MAPA_SVG = '<svg class="cover-map" viewBox="0 0 8000 1834" preserveAspectRatio="
 MAPA_OSCURO = MAPA_SVG.replace("#164E63", "#FFFFFF").replace("#64748B", "#CBD5E1")
 MAPA_URI = "data:image/svg+xml;base64," + base64.b64encode(MAPA_OSCURO.encode("utf-8")).decode()
 
+
+# Ilustraciones de la portada (SVG propios, tonos blancos/teal/naranja sobre fondo oscuro) -> data URI para usarlas como fondo CSS
+def _svg_uri(cuerpo):
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 340" fill="none" font-family="Inter,Arial,sans-serif">'
+           '<rect x="1" y="1" width="478" height="338" rx="22" fill="#0E2430"/>'
+           '<rect x="1" y="1" width="478" height="338" rx="22" fill="#F8FAFC" fill-opacity=".05" stroke="#F8FAFC" stroke-opacity=".16"/>'
+           + cuerpo + '</svg>')
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode("utf-8")).decode()
+
+
+_barras = "".join(
+    f'<rect x="{46 + i * 56}" y="{250 - t}" width="34" height="{t}" rx="6" fill="#5FA89C"/>'
+    f'<rect x="{46 + i * 56}" y="{250 - t - u}" width="34" height="{u}" rx="6" fill="#CFE8E4" fill-opacity=".85"/>'
+    for i, (t, u) in enumerate([(60, 70), (80, 62), (74, 78), (104, 60), (96, 84), (124, 56), (140, 50)]))
+ART_FORMAL = _svg_uri(
+    '<text x="34" y="52" fill="#F8FAFC" fill-opacity=".9" font-size="15" font-weight="600">Formal vs. no formal</text>'
+    '<path d="M34 250H446M34 200H446M34 150H446M34 100H446" stroke="#F8FAFC" stroke-opacity=".16" stroke-dasharray="2 7"/>'
+    + _barras +
+    '<rect x="34" y="276" width="412" height="12" rx="6" fill="#CFE8E4" fill-opacity=".85"/><rect x="34" y="276" width="236" height="12" rx="6" fill="#5FA89C"/>'
+    '<circle cx="388" cy="64" r="22" fill="#E07B1F" fill-opacity=".18" stroke="#E07B1F"/><path d="M378 66l7 7 12-14" stroke="#E07B1F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>')
+ART_INGRESOS = _svg_uri(
+    '<text x="34" y="52" fill="#F8FAFC" fill-opacity=".9" font-size="15" font-weight="600">Ingreso laboral</text>'
+    '<path d="M34 270H446M34 220H446M34 170H446M34 120H446" stroke="#F8FAFC" stroke-opacity=".16" stroke-dasharray="2 7"/>'
+    '<path d="M34 240C100 236 140 214 190 196S290 150 340 130 410 100 446 84V150C410 170 380 196 340 208S250 238 190 248 90 262 34 264Z" fill="#E07B1F" fill-opacity=".14"/>'
+    '<path d="M34 252C100 248 140 230 190 220S290 190 340 170 410 134 446 116" stroke="#F8FAFC" stroke-width="3.5" stroke-linecap="round"/>'
+    '<circle cx="340" cy="170" r="7" fill="#0B1D27" stroke="#F8FAFC" stroke-width="3"/>'
+    '<g transform="translate(372 52)"><circle cx="30" cy="30" r="30" fill="#E07B1F"/><circle cx="30" cy="30" r="22" stroke="#0B1D27" stroke-opacity=".35" stroke-width="2"/>'
+    '<text x="30" y="40" text-anchor="middle" fill="#0B1D27" font-size="28" font-weight="700">$</text></g>')
+ART_MODELO = _svg_uri(
+    '<circle cx="82" cy="78" r="26" fill="#CFE8E4" fill-opacity=".9"/><path d="M52 130c4-22 18-32 30-32s26 10 30 32" fill="#5FA89C"/>'
+    '<rect x="128" y="62" width="150" height="12" rx="6" fill="#F8FAFC" fill-opacity=".85"/><rect x="128" y="86" width="100" height="10" rx="5" fill="#F8FAFC" fill-opacity=".35"/>'
+    '<rect x="34" y="162" width="190" height="34" rx="17" fill="#F8FAFC" fill-opacity=".1" stroke="#F8FAFC" stroke-opacity=".3"/><circle cx="54" cy="179" r="7" fill="#5FA89C"/>'
+    '<rect x="34" y="210" width="190" height="34" rx="17" fill="#F8FAFC" fill-opacity=".1" stroke="#F8FAFC" stroke-opacity=".3"/><circle cx="54" cy="227" r="7" fill="#5FA89C"/>'
+    '<rect x="34" y="258" width="190" height="34" rx="17" fill="#F8FAFC" fill-opacity=".1" stroke="#F8FAFC" stroke-opacity=".3"/><circle cx="54" cy="275" r="7" fill="#E07B1F"/>'
+    '<path d="M262 280a96 96 0 0 1 192 0" stroke="#F8FAFC" stroke-opacity=".18" stroke-width="16" stroke-linecap="round"/>'
+    '<path d="M262 280a96 96 0 0 1 163-68" stroke="#5FA89C" stroke-width="16" stroke-linecap="round"/>'
+    '<text x="358" y="264" text-anchor="middle" fill="#F8FAFC" font-size="40" font-weight="700">78%</text>'
+    '<text x="358" y="292" text-anchor="middle" fill="#CBD5E1" font-size="13">prob. de empleo formal</text>')
+
 CSS = Template("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap');
@@ -229,11 +268,42 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 .cover-sub { color:#CBD5E1; font-size:clamp(1.15rem, 1.7vw, 1.65rem); line-height:1.45; margin:1.5rem auto 0; max-width:680px;
     text-shadow:0 0 18px rgba(11,29,39,.9), 0 0 8px rgba(11,29,39,.9); }
 .cover-foot { text-align:center; color:#94A3B8; font-size:.82rem; margin-top:3.5rem; }
-.st-key-cover_cta { display:flex; flex-direction:column; align-items:center; margin-top:2.4rem; }
-.st-key-cover_cta button { min-width:240px; background:#F8FAFC; color:#0B1D27; border:none; border-radius:8px;
+.st-key-cover_cta, .st-key-cover_cta2 { display:flex; flex-direction:column; align-items:center; margin-top:2.4rem; }
+.st-key-cover_cta button, .st-key-cover_cta2 button { min-width:240px; background:#F8FAFC; color:#0B1D27; border:none; border-radius:8px;
     padding:1rem 2.6rem; transition:background .15s; }
-.st-key-cover_cta button:hover { background:#CFE8E4; color:#0B1D27; }
-.st-key-cover_cta button p { color:inherit; font-size:1.15rem; font-weight:600; }
+.st-key-cover_cta button:hover, .st-key-cover_cta2 button:hover { background:#CFE8E4; color:#0B1D27; }
+.st-key-cover_cta button p, .st-key-cover_cta2 button p { color:inherit; font-size:1.15rem; font-weight:600; }
+
+/* Portada interactiva: frases rotativas, secciones que aparecen al desplazarse y botón final */
+.cover-content { padding-top:max(5vh, calc(46vh - 16rem)); }
+.cover-frases { position:relative; height:clamp(5.2rem, 9vw, 7.2rem); margin:1.6rem auto 0; max-width:900px; }
+.cover-frases span { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0;
+    font-size:clamp(1.35rem, 2.6vw, 2.2rem); font-weight:500; line-height:1.25; letter-spacing:-0.01em; color:#CFE8E4;
+    text-shadow:0 0 18px rgba(11,29,39,.95), 0 0 8px rgba(11,29,39,.95); animation:frase 20s infinite; }
+.cover-frases span:nth-child(2) { animation-delay:5s; } .cover-frases span:nth-child(3) { animation-delay:10s; } .cover-frases span:nth-child(4) { animation-delay:15s; }
+@keyframes frase { 0% { opacity:0; transform:translateY(16px); } 3%, 22% { opacity:1; transform:none; } 25%, 100% { opacity:0; transform:translateY(-16px); } }
+.cover-scroll { text-align:center; color:#94A3B8; font-size:.82rem; letter-spacing:.14em; text-transform:uppercase; margin-top:3rem; }
+.cover-scroll i { display:block; width:1px; height:44px; background:linear-gradient(#94A3B8, transparent); margin:10px auto 0; animation:caer 2s ease-in-out infinite; }
+@keyframes caer { 0% { transform:scaleY(.2); transform-origin:top; opacity:.3; } 50% { transform:scaleY(1); transform-origin:top; opacity:1; } 100% { transform:scaleY(1); transform-origin:bottom; opacity:0; } }
+.cv-sec { display:flex; align-items:center; justify-content:center; gap:clamp(2rem, 6vw, 6rem); min-height:84vh; padding:6vh 0; max-width:1100px; margin:0 auto; }
+.cv-sec.inv { flex-direction:row-reverse; }
+.cv-txt { flex:1 1 0; min-width:0; text-shadow:0 0 22px #0B1D27, 0 0 10px #0B1D27, 0 0 4px #0B1D27; }
+.cv-k { color:#5FA89C; font-size:.85rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; margin-bottom:1rem; }
+.cv-h { color:#F8FAFC; font-size:clamp(2rem, 4.6vw, 3.8rem); font-weight:600; line-height:1.05; letter-spacing:-0.03em; }
+.cv-p { color:#CBD5E1; font-size:clamp(1.05rem, 1.5vw, 1.3rem); line-height:1.5; margin-top:1.2rem; max-width:34rem; }
+.cv-art { flex:1 1 0; min-width:0; aspect-ratio:480 / 340; background-size:contain; background-repeat:no-repeat; background-position:center; filter:drop-shadow(0 24px 50px rgba(0,0,0,.35)); }
+.cv-art.a { background-image:url("$ART_FORMAL"); } .cv-art.b { background-image:url("$ART_INGRESOS"); } .cv-art.c { background-image:url("$ART_MODELO"); }
+.cv-fin { text-align:center; padding:12vh 0 2vh; }
+.cv-fin .cv-h { max-width:14ch; margin:0 auto; }
+@supports (animation-timeline: view()) {
+    .cv-txt, .cv-art { animation:aparece linear both; animation-timeline:view(); animation-range:entry 0% cover 38%; }
+    .cv-art { animation-name:aparece-art; }
+    .cv-fin .cv-h { animation:aparece linear both; animation-timeline:view(); animation-range:entry 0% cover 40%; }
+}
+@keyframes aparece { from { opacity:0; transform:translateY(56px); } to { opacity:1; transform:none; } }
+@keyframes aparece-art { from { opacity:0; transform:translateY(80px) scale(.92); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion: reduce) { .cover-frases span { animation:none; } .cover-frases span:first-child { opacity:1; } .cv-txt, .cv-art, .cv-fin .cv-h { animation:none !important; } }
+@media (max-width:900px) { .cv-sec, .cv-sec.inv { flex-direction:column; min-height:auto; padding:8vh 0; text-align:center; } .cv-p { margin-left:auto; margin-right:auto; } .cv-art { width:100%; } }
 @media (min-width:1100px) { .block-container:has(.cover-content) { padding-right:32px; } }
 @media (max-width:900px) { .cover-title { font-size:2.8rem; } .cover-content { padding-top:12vh; } }
 
@@ -290,7 +360,7 @@ def inject_css():
     st.markdown(CSS.safe_substitute(
         F_BODY=F_BODY, F_DISPLAY=F_DISPLAY, TEXT=TEXT, MUTED=MUTED, MUTED2=MUTED2, BG=BG, SURFACE=SURFACE,
         PRIMARY=PRIMARY, PRIMARY_DARK=PRIMARY_DARK, NOFORMAL=NOFORMAL, ACCENT=ACCENT, ACCENT_TEXT=ACCENT_TEXT,
-        BORDER=BORDER, HAIRLINE=HAIRLINE, FIELD=FIELD, TINT=TINT, TRACK=TRACK, MAPA_URI=MAPA_URI,
+        BORDER=BORDER, HAIRLINE=HAIRLINE, FIELD=FIELD, TINT=TINT, TRACK=TRACK, MAPA_URI=MAPA_URI, ART_FORMAL=ART_FORMAL, ART_INGRESOS=ART_INGRESOS, ART_MODELO=ART_MODELO,
     ), unsafe_allow_html=True)
 
 
@@ -824,16 +894,32 @@ def asistente():
 # PÁGINAS
 # ---------------------------------------------------------------------------
 def pagina_inicio():
-    """Portada: pantalla separada, sin navegación ni asistente. El mapa es el fondo (ver CSS)."""
+    """Portada: pantalla separada, sin navegación ni asistente. El mapa es el fondo (ver CSS); al desplazarse aparecen tres escenas."""
+    frases = ["¿Te gustaría saber más del empleo en Colombia?", "¿Y si pudieras encontrar el trabajo de tus sueños?",
+              "¿Cuánto podrías ganar con tu perfil?", "¿Qué tan probable es conseguir un empleo formal?"]
+    escenas = [
+        ("a", "", "Formalidad", "¿Quién tiene un empleo formal?",
+         "Compara por sexo, edad, educación, sector y territorio. Los patrones aparecen cuando miras los datos de cerca."),
+        ("b", " inv", "Ingresos", "¿Cuánto se gana de verdad?",
+         "Medianas, brechas y tendencias mes a mes, de 2023 a 2025."),
+        ("c", "", "Modelo predictivo", "¿Y si el trabajo de tus sueños tiene números?",
+         "Responde unas preguntas sobre tu perfil y descubre tu probabilidad de empleo formal y tu ingreso esperado."),
+    ]
     st.markdown(
         '<div class="cover-content">'
         '<div class="cover-title">Mercado laboral<br>en Colombia</div>'
-        '<div class="cover-sub">Una solución para tomar decisiones sobre el empleo</div>'
+        '<div class="cover-frases">' + "".join(f"<span>{f}</span>" for f in frases) + '</div>'
         '</div>', unsafe_allow_html=True)
     with st.container(key="cover_cta"):
-        st.button("Iniciar", key="cover_go", on_click=ir, args=("formalidad",))
-    st.markdown('<div class="cover-foot">Fuente: Gran Encuesta Integrada de Hogares (GEIH), DANE.</div>',
-                unsafe_allow_html=True)
+        st.button("Conoce más", key="cover_go", on_click=ir, args=("formalidad",))
+    st.markdown('<div class="cover-scroll">Desliza<i></i></div>', unsafe_allow_html=True)
+    for clave, inv, k, h, t in escenas:
+        st.markdown(f'<div class="cv-sec{inv}"><div class="cv-txt"><div class="cv-k">{k}</div><div class="cv-h">{h}</div>'
+                    f'<div class="cv-p">{t}</div></div><div class="cv-art {clave}"></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="cv-fin"><div class="cv-h">Empieza a explorar</div></div>', unsafe_allow_html=True)
+    with st.container(key="cover_cta2"):
+        st.button("Conoce más", key="cover_go2", on_click=ir, args=("formalidad",))
+    st.markdown('<div class="cover-foot">Fuente: Gran Encuesta Integrada de Hogares (GEIH), DANE.</div>', unsafe_allow_html=True)
 
 
 def pagina_formalidad(df_raw):
