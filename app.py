@@ -49,6 +49,18 @@ MAPAS_CIUDAD = {"bogota": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0
 MAPA_BOGOTA, MAPA_MEDELLIN, MAPA_CARTAGENA = ("data:image/svg+xml;base64," + base64.b64encode(MAPAS_CIUDAD[k].encode("utf-8")).decode() for k in ("bogota", "medellin", "cartagena"))
 
 
+# Icono flotante del asistente: robot con maletín de trabajo
+ROBOT_SVG = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#17495A"/>'
+             '<g transform="translate(32 31) scale(.88) translate(-32 -32)">'
+             '<path d="M32 8v7" stroke="#F8FAFC" stroke-width="2.6" stroke-linecap="round"/><circle cx="32" cy="7" r="3.2" fill="#E07B1F"/>'
+             '<rect x="17" y="15" width="30" height="23" rx="8" fill="#F8FAFC"/><rect x="12.5" y="22" width="4.5" height="9" rx="2.2" fill="#CFE8E4"/><rect x="47" y="22" width="4.5" height="9" rx="2.2" fill="#CFE8E4"/>'
+             '<circle cx="26" cy="25.5" r="3.3" fill="#17495A"/><circle cx="38" cy="25.5" r="3.3" fill="#17495A"/><path d="M26.5 32q5.5 3.6 11 0" stroke="#17495A" stroke-width="2.1" fill="none" stroke-linecap="round"/>'
+             '<rect x="21" y="40" width="22" height="10" rx="4.5" fill="#F8FAFC"/>'
+             '<path d="M41.5 50v-2.8a2.3 2.3 0 0 1 2.3-2.3h4.4a2.3 2.3 0 0 1 2.3 2.3V50" stroke="#E07B1F" stroke-width="2.2" fill="none"/>'
+             '<rect x="35" y="49.5" width="23" height="13.5" rx="3.2" fill="#E07B1F" stroke="#17495A" stroke-width="1.6"/>'
+             '<path d="M35 55h23" stroke="#17495A" stroke-opacity=".45" stroke-width="1.3"/><rect x="44.5" y="53.4" width="4" height="3.6" rx="1" fill="#F8FAFC"/></g></svg>')
+ROBOT_URI = "data:image/svg+xml;base64," + base64.b64encode(ROBOT_SVG.encode("utf-8")).decode()
+
 # Ilustraciones de la portada (SVG propios, tonos blancos/teal/naranja sobre fondo oscuro) -> data URI para usarlas como fondo CSS
 def _svg_uri(cuerpo):
     svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 340" fill="none" font-family="Inter,Arial,sans-serif">'
@@ -239,7 +251,25 @@ div[class*="st-key-back_"] button { color:$PRIMARY; text-decoration:underline; }
 div[class*="st-key-helpbtn_"] button, div[class*="st-key-helpclose_"] button { color:$ACCENT_TEXT; }
 div[class*="st-key-back_"] button:hover, div[class*="st-key-helpbtn_"] button:hover, div[class*="st-key-helpclose_"] button:hover { background:transparent; }
 
-/* Asistente virtual: panel blanco fijo a la derecha, visible en todas las secciones */
+/* Asistente virtual: icono flotante (robot con maletín) que abre un panel de chat a la derecha */
+.st-key-fab { position:fixed; right:24px; bottom:24px; width:auto !important; z-index:101; }
+.st-key-fab button { position:relative; overflow:visible; width:68px; height:68px; min-height:0; padding:0; border-radius:50%; border:3px solid #FFFFFF;
+    background:#17495A url("$ROBOT_URI") center / cover no-repeat; box-shadow:0 10px 28px rgba(11,29,39,.32); transition:transform .15s;
+    animation:fabFlota 4s ease-in-out infinite; }
+.st-key-fab button:hover { transform:scale(1.08); background:#17495A url("$ROBOT_URI") center / cover no-repeat; border-color:#FFFFFF; }
+.st-key-fab button p { font-size:0; }
+.st-key-fab button::after { content:""; position:absolute; top:-3px; right:-3px; width:16px; height:16px; border-radius:50%; background:#E07B1F; border:2px solid #FFFFFF;
+    animation:fabPulso 2s ease-out infinite; }
+@keyframes fabFlota { 0%, 100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
+@keyframes fabPulso { 0% { box-shadow:0 0 0 0 rgba(224,123,31,.6); } 100% { box-shadow:0 0 0 12px rgba(224,123,31,0); } }
+@keyframes fabBurbuja { 0%, 14% { opacity:0; transform:translateY(8px) scale(.96); } 18%, 42% { opacity:1; transform:none; } 46%, 100% { opacity:0; transform:translateY(8px) scale(.96); } }
+.st-key-fab button::before { position:absolute; right:84px; bottom:10px; width:max-content; max-width:min(260px, 62vw); box-sizing:border-box; padding:11px 15px; border-radius:16px 16px 4px 16px;
+    background:#FFFFFF; color:$TEXT; border:1px solid $BORDER; box-shadow:0 8px 24px rgba(11,29,39,.18); font-size:14px; font-weight:400; line-height:1.4; text-align:left; white-space:normal;
+    opacity:0; animation:fabBurbuja 30s ease-in-out infinite; animation-delay:3s; pointer-events:none; }
+.st-key-chat_close { position:absolute; top:12px; right:12px; width:auto !important; }
+.st-key-chat_close button { min-height:0; width:34px; height:34px; padding:0; border:none; background:transparent; color:$MUTED; font-size:18px; border-radius:8px; }
+.st-key-chat_close button:hover { background:$FIELD; color:$TEXT; }
+@media (prefers-reduced-motion: reduce) { .st-key-fab button, .st-key-fab button::after { animation:none; } }
 .st-key-chat { position:fixed; top:0; right:0; bottom:0; width:380px !important; max-width:100vw; z-index:100; background:$SURFACE;
     border-left:1px solid $HAIRLINE; padding:28px 20px 20px; display:flex; flex-direction:column; gap:16px; overflow-y:auto; box-sizing:border-box; }
 .chat-title { font-size:19px; font-weight:600; }
@@ -258,9 +288,8 @@ div[class*="st-key-sug_"] button:hover { background:$FIELD; color:$TEXT; }
 div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-align:left; }
 .st-key-chat_reset button { width:auto; min-height:0; padding:0; background:transparent; border:none; color:$MUTED; font-size:13px; }
 .st-key-chat_reset button:hover { color:$PRIMARY; background:transparent; text-decoration:underline; }
-@media (min-width:1100px) { .block-container { max-width:none; padding-right:412px; } }
-@media (max-width:1099px) { .st-key-chat { position:static; width:100% !important; border-left:none;
-    border-top:1px solid $HAIRLINE; margin-top:2rem; padding:20px 0 0; overflow:visible; } }
+@media (min-width:1100px) { .block-container:has(.st-key-chat):not(:has(.cover-content)) { max-width:none; padding-right:412px; } }
+@media (max-width:640px) { .st-key-chat { width:100vw !important; } }
 
 /* Portada (modo oscuro): el mapa es el fondo de toda la app mientras se muestra la portada */
 .stApp:has(.cover-content) { background-color:#0B1D27; background-image:radial-gradient(ellipse at center, #14333F 0%, #0B1D27 68%);
@@ -344,6 +373,10 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 .sv-tip { background:$TINT; color:$TEAL_TEXT; border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.4; }
 .sv-title { font-size:26px; font-weight:600; letter-spacing:-0.01em; line-height:1.2; margin-top:8px; }
 .sv-lead { font-size:14px; color:$MUTED; margin-top:4px; }
+.mv-tabs { display:flex; justify-content:center; gap:8px; margin:-4px 0 18px; }
+.mv-tabs span { font-size:13px; font-weight:500; color:$MUTED; padding:6px 14px; border-radius:999px; background:$TRACK; }
+.mv-tabs span.on { background:$PRIMARY; color:#FFFFFF; }
+.pf-g { font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:$MUTED; margin:16px 0 2px; }
 .sv-q { font-size:17px; font-weight:600; margin-top:14px; animation:svEntra .4s ease both; }
 @keyframes svEntra { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
 .sv-h { font-size:13px; color:$MUTED; margin-top:2px; }
@@ -389,7 +422,7 @@ def inject_css():
     st.markdown(CSS.safe_substitute(
         F_BODY=F_BODY, F_DISPLAY=F_DISPLAY, TEXT=TEXT, MUTED=MUTED, MUTED2=MUTED2, BG=BG, SURFACE=SURFACE,
         PRIMARY=PRIMARY, PRIMARY_DARK=PRIMARY_DARK, NOFORMAL=NOFORMAL, ACCENT=ACCENT, ACCENT_TEXT=ACCENT_TEXT,
-        BORDER=BORDER, HAIRLINE=HAIRLINE, FIELD=FIELD, TINT=TINT, TRACK=TRACK, MAPA_URI=MAPA_URI, MAPA_BOGOTA=MAPA_BOGOTA, MAPA_MEDELLIN=MAPA_MEDELLIN, MAPA_CARTAGENA=MAPA_CARTAGENA, ART_FORMAL=ART_FORMAL, ART_INGRESOS=ART_INGRESOS, ART_MODELO=ART_MODELO,
+        BORDER=BORDER, HAIRLINE=HAIRLINE, FIELD=FIELD, TINT=TINT, TRACK=TRACK, MAPA_URI=MAPA_URI, ROBOT_URI=ROBOT_URI, MAPA_BOGOTA=MAPA_BOGOTA, MAPA_MEDELLIN=MAPA_MEDELLIN, MAPA_CARTAGENA=MAPA_CARTAGENA, ART_FORMAL=ART_FORMAL, ART_INGRESOS=ART_INGRESOS, ART_MODELO=ART_MODELO,
     ), unsafe_allow_html=True)
 
 
@@ -894,11 +927,39 @@ def reiniciar_chat():
     st.session_state.chat = [BIENVENIDA]
 
 
+def alternar_chat():
+    st.session_state["chat_abierto"] = not st.session_state.get("chat_abierto", False)
+
+
+MENSAJES_FAB = {
+    "inicio": "¿Quieres saber qué puedes explorar aquí? Pregúntame.",
+    "formalidad": "¿Te explico cómo leer estos gráficos de formalidad?",
+    "ingresos": "¿Dudas sobre los ingresos? Te ayudo a interpretarlos.",
+    "modelo": "¿No encuentras tu opción? Te ayudo a elegir la más cercana.",
+    "modelo_resumen": "¿Todo bien con tu resumen? Puedo ayudarte con cualquier duda.",
+    "modelo_resultado": "¿Te explico cómo se interpreta tu resultado?",
+}
+
+
+def flotante():
+    """Icono flotante del asistente (robot con maletín). Muestra de vez en cuando un aviso y, al pulsarlo, abre el chat."""
+    pagina = st.session_state.get("page", "inicio")
+    clave = pagina
+    if pagina == "modelo" and st.session_state.get("m_vista") in ("resumen", "resultado"):
+        clave = "modelo_" + st.session_state["m_vista"]
+    msg = MENSAJES_FAB.get(clave, MENSAJES_FAB["inicio"]).replace("\\", "\\\\").replace('"', '\\"')
+    st.markdown(f'<style>.st-key-fab button::before {{ content:"{msg}"; }}</style>', unsafe_allow_html=True)
+    with st.container(key="fab"):
+        st.button("Asistente virtual", key="fab_btn", on_click=alternar_chat, help="Abrir el asistente virtual")
+
+
 def asistente():
-    """Chatbot fijo y desplegado en todas las secciones."""
+    """Panel de chat a la derecha; se abre desde el icono flotante."""
     if "chat" not in st.session_state:
         st.session_state.chat = [BIENVENIDA]
     with st.container(key="chat"):
+        with st.container(key="chat_close"):
+            st.button("✕", key="chat_close_btn", on_click=alternar_chat, help="Cerrar el asistente")
         st.markdown('<div><span class="chat-title">Asistente virtual</span><span class="tag">En desarrollo</span>'
                     '<div class="chat-sub">Pregunta sobre los datos de esta sección.</div></div>',
                     unsafe_allow_html=True)
@@ -1274,7 +1335,7 @@ def paso_menos():
 
 
 def reiniciar_encuesta():
-    for k in [*CLAVES.values(), "m_paso", "m_resultado"]:
+    for k in [*CLAVES.values(), "m_paso", "m_resultado", "m_vista"]:
         st.session_state.pop(k, None)
 
 
@@ -1375,86 +1436,108 @@ def resultado_modelo(resp):
         aviso(dict(tipo="advertencia", msg=MENSAJES_REGLA.get(i, f"El perfil activó la regla {i}.")))
 
 
+def ir_vista(vista, paso=None):
+    st.session_state["m_vista"] = vista
+    if paso is not None:
+        st.session_state["m_paso"] = paso
+
+
+def predecir_y_mostrar(payload):
+    predecir_perfil(payload)
+    st.session_state["m_vista"] = "resultado"
+
+
 def pagina_modelo(df_raw):
     ss = st.session_state
-    for k in [k for k in ss if k in (*CLAVES.values(), "m_paso", "m_resultado")]:   # conserva las respuestas de los pasos que no se están dibujando
+    for k in [k for k in ss if k in (*CLAVES.values(), "m_paso", "m_resultado", "m_vista")]:   # conserva las respuestas de los pasos que no se están dibujando
         ss[k] = ss[k]
     sectores = opciones_sector(tuple(df_raw["sector_economico_seccion"].dropna().astype(str).unique()))
     sec_o = sector_defensa(sectores)
     cat = catalogos_desde_base(df_raw)
     sanear(sectores, sec_o)
     paso = ss.setdefault("m_paso", 0)
-
-    encabezado("Modelo predictivo", "Responde unas preguntas sobre tu perfil y estima tu probabilidad de empleo formal y tu ingreso laboral.")
-    izq, der = st.columns([1.5, 1], gap="large")
+    vista = ss.setdefault("m_vista", "preguntas")
 
     r = respuestas()
     p = completar(r, sec_o)
     avisos = validar(p)
-    faltan = [c for c in CAMPOS if p[c] is None]
     bloqueos = [m for m in avisos if m["tipo"] == "bloqueo"]
-    listo = not faltan and not bloqueos
+    listo = all(p[c] is not None for c in CAMPOS) and not bloqueos
+    if vista != "preguntas" and not listo:        # sin respuestas completas no hay resumen ni resultado
+        vista = ss["m_vista"] = "preguntas"
+    if vista == "resultado" and not ss.get("m_resultado"):
+        vista = ss["m_vista"] = "resumen"
 
-    with izq, st.container(key="card_encuesta"):
-        segmentos = "".join(
-            f'<div class="sv-step {"on" if i == paso else "done" if i < paso else ""}"><b>Paso {i + 1}</b>{n}</div>'
-            for i, (n, *_ ) in enumerate(PASOS))
-        html(f'<div class="sv-steps">{segmentos}</div>')
-        _, titular, intro, campos = PASOS[paso]
-        html(f'<div><div class="sv-title">{titular}</div><div class="sv-lead">{intro}</div></div>')
-        html('<div class="sv-tip"><b>Si no ves tu situación exacta,</b> elige la opción que más se acerque a ella.</div>')
-        controles_paso(paso, sectores, sec_o, cat)
-        r = respuestas()
-        p = completar(r, sec_o)
-        avisos = validar(p)
-        bloqueos = [m for m in avisos if m["tipo"] == "bloqueo"]
-        for m in avisos:
-            if m["paso"] == paso:
-                aviso(m)
-        paso_completo = all(p[c] is not None for c in campos) and not any(m["paso"] == paso for m in bloqueos)
-        c1, c2 = st.columns(2, vertical_alignment="center")
-        with c1, st.container(key="svback"):
-            if paso > 0:
-                st.button("←  Atrás", key="sv_back_btn", on_click=paso_menos)
-        with c2, st.container(key="svnext"):
-            if paso < len(PASOS) - 1:
-                if paso_completo:
-                    st.button("Siguiente  →", key="sv_next_btn", on_click=paso_mas)
-            else:
-                html('<div class="sv-h" style="text-align:right">Cuando termines, pulsa «Predecir».</div>')
+    titulos = {"preguntas": "Cuéntanos sobre ti", "resumen": "Revisa tus respuestas", "resultado": "Tu resultado"}
+    subs = {"preguntas": "Responde unas preguntas sobre tu perfil. Las vamos haciendo de a una.",
+            "resumen": "Confirma que todo está bien antes de predecir.",
+            "resultado": "Probabilidad de empleo formal e ingreso laboral estimado para tu perfil."}
+    encabezado("Modelo predictivo", subs[vista])
+    pasos_vista = [("preguntas", "1  Preguntas"), ("resumen", "2  Resumen"), ("resultado", "3  Resultado")]
+    html('<div class="mv-tabs">' + "".join(f'<span class="{"on" if k == vista else ""}">{n}</span>' for k, n in pasos_vista) + '</div>')
+    _, centro, _ = st.columns([1, 2.4, 1])
 
-    listo = not [c for c in CAMPOS if p[c] is None] and not bloqueos
-    with der:
-        with st.container(key="card_perfil"):
-            n = sum(p[c] is not None for c in CAMPOS)
-            html(f'<div class="card-head"><div class="eyebrow">Tu perfil</div><div class="card-sub" style="margin:0">{n} de {len(CAMPOS)} respuestas</div></div>')
-            filas = "".join(
-                f'<div class="pf-row"><span>{ETIQUETAS[c]}</span><b class="{"" if p[c] is not None else "vacio"}">'
-                f'{escape(mostrar_valor(c, p[c])) if p[c] is not None else "—"}'
-                f'{"<i>auto</i>" if p[c] is not None and r[c] is None else ""}</b></div>' for c in CAMPOS)
-            html(f'<div>{filas}</div>')
-            for m in avisos:
-                aviso(m)
-            with st.container(key="predecir_modelo"):
+    with centro:
+        if vista == "preguntas":
+            with st.container(key="card_encuesta"):
+                segmentos = "".join(
+                    f'<div class="sv-step {"on" if i == paso else "done" if i < paso else ""}"><b>Paso {i + 1}</b>{n}</div>'
+                    for i, (n, *_ ) in enumerate(PASOS))
+                html(f'<div class="sv-steps">{segmentos}</div>')
+                _, titular, intro, campos = PASOS[paso]
+                html(f'<div><div class="sv-title">{titular}</div><div class="sv-lead">{intro}</div></div>')
+                html('<div class="sv-tip"><b>Si no ves tu situación exacta,</b> elige la opción que más se acerque a ella.</div>')
+                controles_paso(paso, sectores, sec_o, cat)
+                r = respuestas()
+                p = completar(r, sec_o)
+                avisos = validar(p)
+                bloqueos = [m for m in avisos if m["tipo"] == "bloqueo"]
+                for m in avisos:
+                    if m["paso"] == paso:
+                        aviso(m)
+                paso_completo = all(p[c] is not None for c in campos) and not any(m["paso"] == paso for m in bloqueos)
+                c1, c2 = st.columns(2, vertical_alignment="center")
+                with c1, st.container(key="svback"):
+                    if paso > 0:
+                        st.button("←  Atrás", key="sv_back_btn", on_click=paso_menos)
+                with c2, st.container(key="svnext"):
+                    if paso_completo:
+                        if paso < len(PASOS) - 1:
+                            st.button("Siguiente  →", key="sv_next_btn", on_click=paso_mas)
+                        else:
+                            st.button("Ver resumen  →", key="sv_resumen_btn", on_click=ir_vista, args=("resumen",))
+        elif vista == "resumen":
+            with st.container(key="card_perfil"):
+                grupos = ""
+                for nombre, _, _, campos in PASOS:
+                    filas = "".join(
+                        f'<div class="pf-row"><span>{ETIQUETAS[c]}</span><b>{escape(mostrar_valor(c, p[c]))}'
+                        f'{"<i>auto</i>" if r[c] is None else ""}</b></div>' for c in campos)
+                    grupos += f'<div class="pf-g">{nombre}</div>{filas}'
+                html(f'<div class="card-head"><div class="eyebrow">Tu perfil</div><div class="card-sub" style="margin:0">{len(CAMPOS)} respuestas</div></div><div>{grupos}</div>')
+                for m in avisos:
+                    aviso(m)
                 payload = {c: p[c] for c in CAMPOS}
-                if listo:
-                    st.button("Predecir", key="btn_predecir_modelo", on_click=predecir_perfil, args=(payload,))
-            if not listo:
-                nota("Cuando termines de responder, aquí aparecerá el botón «Predecir».")
-            with st.container(key="svreset"):
-                st.button("Empezar de nuevo", key="sv_reiniciar", on_click=reiniciar_encuesta)
-        with st.container(key="card_resultado"):
-            html('<div class="eyebrow">Resultado</div>')
-            res = ss.get("m_resultado")
-            if not res or res["payload"] != payload:
-                html('<div class="rs-empty">Aquí verás tu probabilidad de empleo formal y tu ingreso estimado.'
-                     + (' <br>Tus respuestas cambiaron: vuelve a pulsar «Predecir».' if res else '') + '</div>')
-            elif res["respuesta"] is None:
-                html('<div class="rs-empty">El modelo aún no está conectado, por lo que no se generó ninguna predicción.</div>')
-                with st.expander("Ver los datos que se enviarán al modelo"):
-                    st.json(res["payload"])
-            else:
-                resultado_modelo(res["respuesta"])
+                c1, c2 = st.columns(2, vertical_alignment="center")
+                with c1, st.container(key="svback"):
+                    st.button("←  Editar respuestas", key="sv_editar_btn", on_click=ir_vista, args=("preguntas", 0))
+                with c2, st.container(key="predecir_modelo"):
+                    st.button("Predecir", key="btn_predecir_modelo", on_click=predecir_y_mostrar, args=(payload,))
+        else:
+            res = ss["m_resultado"]
+            with st.container(key="card_resultado"):
+                html('<div class="eyebrow">Resultado</div>')
+                if res["respuesta"] is None:
+                    html('<div class="rs-empty">El modelo aún no está conectado, por lo que no se generó ninguna predicción.</div>')
+                    with st.expander("Ver los datos que se enviarán al modelo"):
+                        st.json(res["payload"])
+                else:
+                    resultado_modelo(res["respuesta"])
+                c1, c2 = st.columns(2, vertical_alignment="center")
+                with c1, st.container(key="svback"):
+                    st.button("←  Ver resumen", key="sv_vresumen_btn", on_click=ir_vista, args=("resumen",))
+                with c2, st.container(key="svnext"):
+                    st.button("Nueva predicción", key="sv_reiniciar", on_click=reiniciar_encuesta)
     pie()
 
 
@@ -1479,5 +1562,7 @@ elif pagina == "ingresos":
 else:
     pagina_modelo(df_raw)
 
-if pagina != "inicio":
+if st.session_state.get("chat_abierto"):
     asistente()
+else:
+    flotante()
