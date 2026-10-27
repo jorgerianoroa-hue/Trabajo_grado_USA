@@ -25,7 +25,7 @@ st.set_page_config(
     page_title="Mercado laboral de Colombia",
     page_icon="◆",
     layout="wide",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="collapsed",
 )
 
 DATA_PATH = Path(__file__).parent / "datos_reducidos.parquet"
@@ -113,12 +113,9 @@ CSS = Template("""
 html, body, [class*="css"], .stApp { font-family:'$F_BODY',sans-serif; color:$TEXT; }
 .stApp { background:$BG; }
 .block-container { max-width:none; padding:clamp(40px, 7vh, 72px) clamp(16px, 2.4vw, 44px) 56px; }
-header[data-testid="stHeader"] { background:transparent !important; height:0 !important; min-height:0 !important; pointer-events:none; }
-header[data-testid="stHeader"] [data-testid="stExpandSidebarButton"], header[data-testid="stHeader"] [data-testid="stSidebarCollapsedControl"] { pointer-events:auto; }
-[data-testid="stDecoration"], [data-testid="stStatusWidget"] { display:none !important; }
+header[data-testid="stHeader"], [data-testid="stDecoration"], [data-testid="stStatusWidget"] { display:none !important; }
 footer { visibility:hidden; }
-[data-testid="stToolbarActions"], [data-testid="stMainMenu"], [data-testid="stAppDeployButton"], .stAppDeployButton { display:none !important; }
-[data-testid="stToolbar"] { pointer-events:none; background:transparent; }
+[data-testid="stToolbar"] { display:none; }
 [data-testid="stVerticalBlock"] { gap:1rem; }
 [data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] p, .stButton button, .stButton button p,
 .stTabs [data-baseweb="tab"] p, label, input, [data-baseweb="select"] { font-family:'$F_BODY',sans-serif !important; }
@@ -126,28 +123,34 @@ footer { visibility:hidden; }
 .foot { border-top:1px solid $HAIRLINE; color:$MUTED; font-size:13px; margin-top:2.5rem; padding-top:1rem; }
 .tag { color:$ACCENT_TEXT; font-size:11px; font-weight:500; border:1px solid $ACCENT; border-radius:999px; padding:2px 8px; margin-left:8px; vertical-align:middle; }
 
-/* Navegación lateral: marca (casita + nombre) arriba y secciones con íconos debajo */
-section[data-testid="stSidebar"] { background:$SURFACE; border-right:1px solid $HAIRLINE; }
-@media (min-width:769px) { section[data-testid="stSidebar"][aria-expanded="true"] { width:264px !important; min-width:264px !important; } }
-section[data-testid="stSidebar"] > div:first-child { width:100%; }
-[data-testid="stSidebarHeader"] { padding:10px 12px 0; height:auto; min-height:0; }
-[data-testid="stSidebarContent"] { padding:0 12px 24px; }
-[data-testid="stSidebarUserContent"] { padding:4px 0 0; }
-.st-key-nav { gap:4px; }
-.st-key-nav button { width:100%; min-height:0; justify-content:flex-start; gap:12px; padding:11px 14px; background:transparent; border:none;
-    border-radius:10px; color:$MUTED2; font-weight:500; font-size:14px; text-align:left; transition:background .15s, color .15s; }
-.st-key-nav button > div { justify-content:flex-start; text-align:left; gap:12px; }
-.st-key-nav button:hover { color:$TEXT; background:$FIELD; }
+/* Barra lateral de íconos: el nombre de cada sección aparece al pasar el cursor */
+.st-key-nav { position:fixed; left:0; top:0; bottom:0; width:72px; z-index:900; background:$SURFACE; border-right:1px solid $HAIRLINE;
+    display:flex; flex-direction:column; align-items:center; gap:8px; padding:18px 0; }
+.st-key-nav > div, .st-key-nav [data-testid="stElementContainer"] { width:auto !important; }
+.st-key-nav button { position:relative; overflow:visible; width:48px; height:48px; min-height:0; padding:0; justify-content:center; background:transparent; border:none;
+    border-radius:12px; color:$MUTED2; transition:background .15s, color .15s; }
+.st-key-nav button > div { justify-content:center; gap:0; }
+.st-key-nav button span[data-testid="stIconMaterial"] { font-size:26px; margin:0; }
+.st-key-nav button:hover { color:$PRIMARY_DARK; background:$FIELD; }
 .st-key-nav button[kind="primary"], .st-key-nav button[data-testid="stBaseButton-primary"],
 .st-key-nav button[kind="primary"]:hover, .st-key-nav button[data-testid="stBaseButton-primary"]:hover {
-    color:$PRIMARY_DARK; font-weight:600; background:$TINT; box-shadow:inset 3px 0 0 $PRIMARY_DARK; }
-.st-key-nav button p { color:inherit; font-size:inherit; font-weight:inherit; line-height:1.3; text-align:left; }
-.st-key-nav button span[data-testid="stIconMaterial"] { font-size:22px; flex:0 0 auto; }
-.st-key-nav_inicio { margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid $HAIRLINE; }
-.st-key-nav_inicio button { padding:8px 14px; color:$PRIMARY_DARK; font-weight:600; font-size:18px; }
-.st-key-nav_inicio button:hover { color:$PRIMARY; background:transparent; }
-.st-key-nav_inicio button span[data-testid="stIconMaterial"] { font-size:26px; }
-[data-testid="stExpandSidebarButton"], [data-testid="stSidebarCollapsedControl"] { display:flex !important; position:fixed; top:12px; left:12px; z-index:999; }
+    color:$PRIMARY_DARK; background:$TINT; box-shadow:inset 3px 0 0 $PRIMARY_DARK; }
+.st-key-nav button p { position:absolute; left:calc(100% + 14px); top:50%; transform:translateY(-50%) translateX(-4px); margin:0; padding:7px 12px; border-radius:8px;
+    background:$TEXT; color:#fff; font-size:13px; font-weight:500; line-height:1.2; white-space:nowrap; opacity:0; pointer-events:none; z-index:1000;
+    transition:opacity .15s, transform .15s; }
+.st-key-nav button:hover p, .st-key-nav button:focus-visible p { opacity:1; transform:translateY(-50%); }
+.st-key-nav_inicio { margin-bottom:10px; padding-bottom:12px; border-bottom:1px solid $HAIRLINE; }
+.st-key-nav_inicio button { color:$PRIMARY_DARK; }
+.st-key-nav_inicio button span[data-testid="stIconMaterial"] { font-size:30px; }
+.block-container:has(.st-key-nav) { padding-left:calc(72px + clamp(16px, 2.4vw, 44px)); }
+@media (max-width:768px) {
+    .st-key-nav { top:auto; right:0; width:100%; height:62px; flex-direction:row; justify-content:space-around; padding:6px 8px; border-right:none; border-top:1px solid $HAIRLINE; gap:0; }
+    .st-key-nav_inicio { margin:0; padding:0; border:none; }
+    .st-key-nav button p { left:50%; top:auto; bottom:calc(100% + 10px); transform:translateX(-50%) translateY(4px); }
+    .st-key-nav button:hover p, .st-key-nav button:focus-visible p { transform:translateX(-50%); }
+    .block-container:has(.st-key-nav) { padding-left:14px; padding-bottom:84px; }
+    .st-key-fab { bottom:76px !important; }
+}
 
 /* Encabezado de página */
 .page-title { font-size:28px; font-weight:600; letter-spacing:-0.01em; line-height:1.2; }
@@ -1051,13 +1054,12 @@ NAV_ICONOS = {"formalidad": ":material/badge:", "ingresos": ":material/payments:
 
 
 def barra_nav():
-    with st.sidebar, st.container(key="nav"):
+    with st.container(key="nav"):
         with st.container(key="nav_inicio"):
-            st.button("Mercado laboral", key="nav_inicio_btn", icon=":material/home:", help="Ir a la portada",
-                      on_click=ir, args=("inicio",))
+            st.button("Mercado laboral", key="nav_inicio_btn", icon=":material/home:", on_click=ir, args=("inicio",))
         for k, etiqueta in NAV:
             st.button(etiqueta, key=f"nav_{k}", icon=NAV_ICONOS[k], on_click=ir, args=(k,),
-                      type="primary" if st.session_state.page == k else "secondary", use_container_width=True)
+                      type="primary" if st.session_state.page == k else "secondary")
 
 
 FILTROS = [("anio", "Año"), ("Mes Letras", "Mes"), ("departamento", "Departamento"),
