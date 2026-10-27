@@ -206,8 +206,12 @@ div[class*="st-key-q_"] input { font-size:14px; color:$TEXT; }
 div[class*="st-key-sort_"] { display:flex; justify-content:flex-end; }
 div[class*="st-key-sort_"] [data-testid="stButtonGroup"] { background:$FIELD; border-radius:10px; padding:4px; gap:4px; }
 div[class*="st-key-sort_"] button { min-height:0; height:36px; padding:0 12px; border:none; border-radius:7px; background:transparent; color:$MUTED2; font-size:13px; }
-div[class*="st-key-sort_"] button[kind="segmented_controlActive"], div[class*="st-key-sort_"] button[data-testid="stBaseButton-segmented_controlActive"] {
-    background:$SURFACE; color:$PRIMARY_DARK; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.08); }
+div[class*="st-key-sort_"] button[kind="segmented_controlActive"], div[class*="st-key-sort_"] button[data-testid="stBaseButton-segmented_controlActive"], div[class*="st-key-sort_"] button[data-selected="true"], div[class*="st-key-sort_"] button[aria-checked="true"] {
+    background:$SURFACE !important; color:$PRIMARY_DARK !important; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.08); }
+.mp-l { font-size:12px; color:$MUTED; margin:0 0 6px; letter-spacing:.04em; text-transform:uppercase; }
+.mp-r { display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-top:1px solid $HAIRLINE; font-size:13px; color:$TEXT; }
+.mp-r b { font-weight:600; white-space:nowrap; }
+.mp-r.hi b { color:$PRIMARY; } .mp-r.lo b { color:$ACCENT_TEXT; }
 div[class*="st-key-tg_"] { display:flex; justify-content:center; }
 div[class*="st-key-tg_"] button { height:44px; min-height:0; padding:0 20px; border:none; border-radius:999px; background:$PRIMARY; color:#FFFFFF; font-size:14px; font-weight:500; width:auto; transition:background .15s; }
 div[class*="st-key-tg_"] button:hover { background:#0E3340; color:#FFFFFF; }
@@ -784,6 +788,90 @@ def tendencia_card(d, dim, titulo, tipo, base):
         grafico_tendencia(d, dim, series, tipo == "formalidad", key=f"ch_{base}")
 
 
+
+# ---------------------------------------------------------------------------
+# MAPA INTERACTIVO POR DEPARTAMENTO (contornos DANE/MGN simplificados; San Andrés va en recuadro cerca del Pacífico)
+# ---------------------------------------------------------------------------
+MAPA_DEP_B64 = "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"
+
+
+@st.cache_resource(show_spinner=False)
+def geojson_departamentos():
+    import json, zlib
+    return json.loads(zlib.decompress(base64.b64decode(MAPA_DEP_B64)).decode())
+
+
+ESCALA_MAPA = [[0, "#E8F1EE"], [.5, "#7DB5AB"], [1, PRIMARY_DARK]]
+
+
+def al_elegir_en_mapa(clave_grafico, base):
+    """Un clic en el mapa elige el departamento (el mismo que el selector del panel Detalle); otro clic sobre él lo quita."""
+    est = st.session_state.get(clave_grafico)
+    try:
+        puntos = est["selection"]["points"]
+    except Exception:
+        puntos = []
+    nuevo = None
+    if puntos:
+        p = puntos[0]
+        nuevo = p.get("location") or (p.get("customdata") or [None])[0]
+    st.session_state[f"{base}_sel"] = nuevo
+
+
+def mapa_card(d, tipo, ref, base, nac):
+    sel = st.session_state.get(f"{base}_sel")
+    nombres = d["departamento"].tolist()
+    con_dato = set(nombres)
+    todos = [f["properties"]["n"] for f in geojson_departamentos()["features"]]
+    z = d["mean"].astype(float).tolist()
+    pct = tipo == "formalidad"
+    if pct:
+        textos = [f"<b>{nm}</b><br>Formal: {fmt_pct(m)} · No formal: {fmt_pct(1 - m)}<br>{fmt_pp(m - ref)} vs. promedio {nac}<br>{fmt_n(n)} registros"
+                  for nm, m, n in zip(nombres, d["mean"], d["n"])]
+        fmt_cb = ".0%"
+    else:
+        textos = [f"<b>{nm}</b><br>Promedio: {fmt_cop(m)}<br>Mediana: {fmt_cop(md)}<br>{fmt_dcop(m - ref)} vs. promedio {nac}<br>{fmt_n(n)} registros"
+                  for nm, m, md, n in zip(nombres, d["mean"], d["median"], d["n"])]
+        fmt_cb = "$,.0f"
+    fig = go.Figure()
+    sin = [n for n in todos if n not in con_dato]
+    if sin:   # departamentos sin registros con los filtros actuales
+        fig.add_trace(go.Choroplethmap(geojson=geojson_departamentos(), featureidkey="properties.n", locations=sin, z=[0] * len(sin),
+                                    colorscale=[[0, "#EDEBE4"], [1, "#EDEBE4"]], showscale=False, marker_line=dict(color="#FFFFFF", width=.8),
+                                    hovertemplate="<b>%{location}</b><br>Sin registros con los filtros actuales<extra></extra>"))
+    fig.add_trace(go.Choroplethmap(
+        geojson=geojson_departamentos(), featureidkey="properties.n", locations=nombres, z=z, customdata=[[n] for n in nombres],
+        colorscale=ESCALA_MAPA, zmin=min(z), zmax=max(z), marker_line=dict(color="#FFFFFF", width=.8),
+        selectedpoints=[nombres.index(sel)] if sel in nombres else None,
+        selected=dict(marker=dict(opacity=1)), unselected=dict(marker=dict(opacity=.55 if sel in nombres else 1)),
+        text=textos, hovertemplate="%{text}<extra></extra>",
+        colorbar=dict(orientation="h", thickness=8, len=.55, x=.5, y=-.02, yanchor="top", outlinewidth=0, tickformat=fmt_cb,
+                      tickfont=dict(size=11, color=MUTED), title=None, nticks=5)))
+    fig.update_maps(style="white-bg", center=dict(lat=4.8, lon=-74.0), zoom=4.35, bounds=dict(west=-86, east=-60, south=-8, north=17))
+    fig.update_layout(**PLOTLY_LAYOUT)
+    fig.update_layout(height=500, margin=dict(t=4, b=4, l=0, r=0),
+                      hoverlabel=dict(bgcolor=SURFACE, bordercolor=BORDER, font=dict(family=F_BODY, size=12, color=TEXT), align="left"))
+    with st.container(key=f"card_{base}_mapa"):
+        leyenda = ('<span>Más formalidad = tono más oscuro</span>' if pct else '<span>Más ingreso promedio = tono más oscuro</span>')
+        html(f'<div class="card-head"><div><div class="card-title">{MEDIDAS[tipo]["nombre"]} por departamento</div>'
+             f'<div class="card-sub">Pasa el cursor para ver las cifras y haz clic para elegir un departamento · San Andrés aparece en el recuadro del Pacífico</div></div>'
+             f'<div class="legend">{leyenda}</div></div>')
+        clave = f"{base}_map_{sel}"
+        cm, cl = st.columns([1.7, 1], gap="medium")
+        with cm:
+            st.plotly_chart(fig, config={"displayModeBar": False, "scrollZoom": False}, key=clave, selection_mode="points",
+                            on_select=lambda c=clave, b=base: al_elegir_en_mapa(c, b))
+        with cl:
+            val = (lambda r: fmt_pct(r["mean"])) if pct else (lambda r: fmt_cop(r["mean"]))
+            def lista(titulo, filas, cls):
+                return (f'<div class="mp-l">{titulo}</div>' + "".join(
+                    f'<div class="mp-r {cls}"><span>{r["rank"]}. {escape(r["departamento"])}</span><b>{val(r)}</b></div>' for _, r in filas.iterrows()))
+            n = min(5, len(d) // 2)
+            if n:
+                html(lista("Más formalidad" if pct else "Mayor ingreso promedio", d.head(n), "hi")
+                     + '<div style="height:18px"></div>' + lista("Menos formalidad" if pct else "Menor ingreso promedio", d.tail(n).iloc[::-1], "lo"))
+
+
 # ---------------------------------------------------------------------------
 # PANEL DE DETALLE Y AYUDA
 # ---------------------------------------------------------------------------
@@ -868,6 +956,14 @@ def bloque_graficos(df, tipo, pagina, ref, ref2, nac):
                         if opts.get("tendencia"):
                             tendencia_card(d.sort_values(dim, key=lambda s: s.map(lambda x: MESES_ORDEN.index(x) if x in MESES_ORDEN else x)),
                                            dim, tit, tipo, base)
+                        elif dim == "departamento":
+                            with st.container(key="sort_dep_" + pagina):
+                                vista = st.segmented_control("Vista", ["Mapa", "Ranking"], default="Mapa", key=f"vista_{base}",
+                                                             label_visibility="collapsed") or "Mapa"
+                            if vista == "Mapa":
+                                mapa_card(d, tipo, ref, base, nac)
+                            else:
+                                ranking_card(d, dim, tit, tipo, ref, base, nac, solo)
                         else:
                             ranking_card(d, dim, tit, tipo, ref, base, nac, solo)
                 if solo and not fila[0][2].get("tendencia"):
