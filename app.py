@@ -170,7 +170,7 @@ div[class*="st-key-chip_"] button:hover { background:#DCEAE6; color:$PRIMARY_DAR
 .kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:1rem; }
 .kpi { background:$SURFACE; border:1px solid $BORDER; border-radius:12px; padding:16px 18px; display:flex; flex-direction:column; gap:4px; }
 .kpi-l { display:flex; align-items:center; gap:6px; font-size:13px; color:$MUTED2; }
-.kpi-v { font-size:32px; font-weight:600; letter-spacing:-0.02em; line-height:1.15; font-variant-numeric:tabular-nums; }
+.kpi-v { font-size:clamp(22px, 2.3vw, 32px); overflow-wrap:anywhere; font-weight:600; letter-spacing:-0.02em; line-height:1.15; font-variant-numeric:tabular-nums; }
 .kpi-v.sm { font-size:22px; letter-spacing:0; line-height:1.3; }
 .kpi-s { font-size:12px; color:$MUTED; }
 .kpi-d { font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; }
@@ -243,16 +243,18 @@ div[class*="st-key-tg_"] button p { color:inherit; }
 
 /* Panel de detalle */
 .eyebrow { font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:$MUTED; }
-.d-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
-.d-name { font-size:20px; font-weight:600; }
+.d-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:2px 8px; }
+.d-name { font-size:20px; font-weight:600; min-width:0; overflow-wrap:anywhere; }
 .d-rank { font-size:13px; color:$MUTED; }
 .d-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
 .d-lab { font-size:12px; color:$MUTED2; }
-.d-num { font-size:26px; font-weight:600; font-variant-numeric:tabular-nums; }
+.d-grid > div { min-width:0; }
+.d-num { font-size:clamp(17px, 1.6vw, 23px); font-weight:600; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; line-height:1.2; }
 .d-cmp { display:flex; flex-direction:column; gap:8px; font-size:12px; color:$MUTED2; }
-.d-line { display:grid; grid-template-columns:70px minmax(0, 1fr) 70px; gap:8px; align-items:center; }
+.d-line { display:grid; grid-template-columns:minmax(0, 84px) minmax(0, 1fr) minmax(52px, auto); gap:8px; align-items:center; }
 .d-track { height:10px; background:$TRACK; border-radius:5px; overflow:hidden; display:flex; }
-.d-line b { text-align:right; color:$TEXT; font-weight:600; }
+.d-line b { text-align:right; color:$TEXT; font-weight:600; white-space:nowrap; }
+.d-line > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .d-text { font-size:14px; line-height:1.5; color:$TEXT; margin:0; }
 .d-text.mut { color:$MUTED; }
 .d-stack { height:14px; display:flex; border-radius:7px; overflow:hidden; }
@@ -352,7 +354,7 @@ div[class*="st-key-predecir_"] button:disabled { background:$TRACK; color:$MUTED
 div[class*="st-key-predecir_"] button p { color:inherit; font-size:inherit; font-weight:inherit; }
 .rs { display:flex; flex-direction:column; gap:6px; padding:6px 0 10px; }
 .rs-l { font-size:13px; color:$MUTED2; }
-.rs-v { font-size:36px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; line-height:1.1; }
+.rs-v { font-size:clamp(26px, 3.2vw, 36px); overflow-wrap:anywhere; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; line-height:1.1; }
 .rs-r { font-size:14px; color:$TEXT; font-weight:500; }
 .rs-empty { padding:28px 8px; text-align:center; color:$MUTED; font-size:14px; line-height:1.6; }
 
@@ -363,7 +365,7 @@ div[class*="st-key-predecir_"] button p { color:inherit; font-size:inherit; font
     .page-title { font-size:26px; } .page-sub { margin-top:2px; font-size:14px; }
     .st-key-filters { padding:12px 18px; gap:8px; }
     .st-key-filters [data-baseweb="select"] > div { min-height:36px; }
-    .kpi { padding:10px 16px; gap:2px; } .kpi-v { font-size:26px; } .kpi-v.sm { font-size:20px; }
+    .kpi { padding:10px 16px; gap:2px; } .kpi-v { font-size:clamp(20px, 2.6vw, 26px); } .kpi-v.sm { font-size:20px; }
     .insight { padding:8px 16px; font-size:13.5px; }
 }
 /* Responsive: del escritorio ancho al celular */
@@ -391,9 +393,10 @@ div[class*="st-key-predecir_"] button p { color:inherit; font-size:inherit; font
     .sv-step { font-size:0; } .sv-step b { font-size:10px; }
     div[class*="st-key-card_encuesta"] { padding:18px; }
     .kpis { grid-template-columns:1fr 1fr; }
-    .kpi-v { font-size:26px; }
+    .kpi-v { font-size:clamp(18px, 5.2vw, 24px); }
+    .kpi-v.sm { font-size:17px; }
     .mv-tabs span { padding:5px 10px; font-size:12px; }
-    .rs-v { font-size:30px; }
+    .rs-v { font-size:28px; }
     .st-key-fab { right:14px; bottom:14px; }
     .st-key-fab button { width:58px; height:58px; }
     .st-key-fab button::before { right:70px; max-width:56vw; }
