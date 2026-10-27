@@ -208,6 +208,9 @@ div[class*="st-key-sort_"] [data-testid="stButtonGroup"] { background:$FIELD; bo
 div[class*="st-key-sort_"] button { min-height:0; height:36px; padding:0 12px; border:none; border-radius:7px; background:transparent; color:$MUTED2; font-size:13px; }
 div[class*="st-key-sort_"] button[kind="segmented_controlActive"], div[class*="st-key-sort_"] button[data-testid="stBaseButton-segmented_controlActive"], div[class*="st-key-sort_"] button[data-selected="true"], div[class*="st-key-sort_"] button[aria-checked="true"] {
     background:$SURFACE !important; color:$PRIMARY_DARK !important; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.08); }
+.dn-cap { display:flex; flex-direction:column; align-items:center; gap:2px; text-align:center; font-size:12px; color:$MUTED; }
+.dn-cap b { font-size:14px; color:$TEXT; font-weight:600; }
+.dn-cap i { font-style:normal; font-weight:600; } .dn-cap i.up { color:$PRIMARY; } .dn-cap i.down { color:$ACCENT_TEXT; }
 .mp-l { font-size:12px; color:$MUTED; margin:0 0 6px; letter-spacing:.04em; text-transform:uppercase; }
 .mp-r { display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-top:1px solid $HAIRLINE; font-size:13px; color:$TEXT; }
 .mp-r b { font-weight:600; white-space:nowrap; }
@@ -653,7 +656,7 @@ GRUPOS = [
     ("Tiempo", [[("anio", "por año", {"tendencia": True}), ("Mes Letras", "por mes", {"tendencia": True})]]),
     ("Educación", [[("nivel_educativo", "por nivel educativo", {})]]),
     ("Demografía", [[("sexo", "por sexo", {}), ("estado_civil", "por estado civil", {})],
-                    [("etnia", "por etnia", {})]]),
+                    [("etnia", "por etnia", {"ancho": True})]]),
     ("Contrato", [[("tipo_contrato", "por tipo de contrato", {}), ("posicion_ocupacional", "por posición ocupacional", {})],
                   [("lugar_trabajo", "por lugar de trabajo", {})]]),
     ("Sector", [[("sector_economico_seccion", "por sector económico", {})]]),
@@ -771,6 +774,53 @@ def ranking_card(d, dim, titulo, tipo, ref, base, nac, completo):
             with st.container(key=f"tg_{base}"):
                 st.button(etiqueta, key=f"tgb_{base}", icon=":material/remove:" if expandido else ":material/add:",
                           on_click=lambda k=exp_key: st.session_state.update({k: not st.session_state.get(k, False)}))
+
+
+def sexo_card(d, tipo, ref, base, nac):
+    """Sexo: en formalidad, un gráfico de círculo (formal / no formal) por cada sexo; en ingresos, promedio y mediana lado a lado."""
+    orden = [x for x in ("Femenino", "Masculino") if x in set(d["sexo"])]
+    d = d.set_index("sexo")
+    with st.container(key=f"card_{base}"):
+        if tipo == "formalidad":
+            leyenda = (f'<span><i class="lg-sq" style="background:{PRIMARY}"></i>Trabajo formal</span>'
+                       f'<span><i class="lg-sq" style="background:{NOFORMAL}"></i>Trabajo no formal</span>')
+            sub = "Distribución del empleo formal y no formal dentro de cada sexo"
+        else:
+            leyenda = (f'<span><i class="lg-sq" style="background:{PRIMARY}"></i>Promedio</span><span><i class="dia"></i>Mediana</span>')
+            sub = "Ingreso laboral promedio y mediana de cada sexo"
+        html(f'<div class="card-head"><div><div class="card-title">{MEDIDAS[tipo]["nombre"]} por sexo</div>'
+             f'<div class="card-sub">{sub}</div></div><div class="legend">{leyenda}</div></div>')
+        if tipo == "formalidad":
+            cols = st.columns(len(orden))
+            for col, sx in zip(cols, orden):
+                m, n = float(d.loc[sx, "mean"]), int(d.loc[sx, "n"])
+                fig = go.Figure(go.Pie(
+                    values=[m, 1 - m], labels=["Trabajo formal", "Trabajo no formal"], hole=.7, sort=False, direction="clockwise", rotation=0,
+                    marker=dict(colors=[PRIMARY, NOFORMAL], line=dict(color=SURFACE, width=3)), textinfo="none",
+                    hovertemplate="%{label}: %{percent:.1%}<extra></extra>"))
+                fig.update_layout(**PLOTLY_LAYOUT)
+                fig.update_layout(height=230, margin=dict(t=6, b=6, l=6, r=6), annotations=[
+                    dict(text=f"<b>{fmt_pct(m)}</b>", x=.5, y=.54, showarrow=False, font=dict(size=26, color=PRIMARY, family=F_BODY)),
+                    dict(text="formal", x=.5, y=.40, showarrow=False, font=dict(size=12, color=MUTED, family=F_BODY))])
+                with col:
+                    st.plotly_chart(fig, config=PLOT_CONFIG, key=f"ch_{base}_{sx}")
+                    dif = m - ref
+                    html(f'<div class="dn-cap"><b>{escape(sx)}</b><span>{fmt_pct(1 - m)} no formal · <i class="{"up" if dif >= 0 else "down"}">{fmt_pp(dif)}</i> vs. promedio {nac}</span>'
+                         f'<span>{fmt_n(n)} registros</span></div>')
+        else:
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=orden, y=[d.loc[x, "mean"] for x in orden], name="Promedio", marker_color=PRIMARY, width=.28,
+                                 text=[fmt_corto(d.loc[x, "mean"]) for x in orden], textposition="outside", cliponaxis=False,
+                                 hovertemplate="%{x}<br>Promedio: $%{y:,.0f}<extra></extra>"))
+            fig.add_trace(go.Bar(x=orden, y=[d.loc[x, "median"] for x in orden], name="Mediana", marker_color=ACCENT, width=.28,
+                                 text=[fmt_corto(d.loc[x, "median"]) for x in orden], textposition="outside", cliponaxis=False,
+                                 hovertemplate="%{x}<br>Mediana: $%{y:,.0f}<extra></extra>"))
+            estilizar_figura(fig, 290, False)
+            fig.update_layout(barmode="group", bargap=.35, margin=dict(t=26, b=8, l=4, r=4))
+            fig.update_yaxes(showticklabels=False, showgrid=False)
+            st.plotly_chart(fig, config=PLOT_CONFIG, key=f"ch_{base}")
+            html('<div class="dn-cap"><span>' + " · ".join(f"{escape(x)}: {fmt_n(int(d.loc[x, 'n']))} registros" for x in orden) + '</span></div>')
+
 
 
 def tendencia_card(d, dim, titulo, tipo, base):
@@ -945,7 +995,8 @@ def bloque_graficos(df, tipo, pagina, ref, ref2, nac):
     for gi, (tab, (_, filas)) in enumerate(zip(tabs, GRUPOS)):
         with tab:
             for fila in filas:
-                solo = len(fila) == 1
+                ancho = len(fila) == 1 and fila[0][2].get("ancho")      # una sola tarjeta a todo el ancho, sin panel de detalle
+                solo = len(fila) == 1 and not ancho
                 cols = st.columns([2.4, 1], gap="large") if solo else st.columns(len(fila), gap="large")
                 for i, (dim, tit, opts) in enumerate(fila):
                     base = f"{pagina}_{dim}"
@@ -956,6 +1007,8 @@ def bloque_graficos(df, tipo, pagina, ref, ref2, nac):
                         if opts.get("tendencia"):
                             tendencia_card(d.sort_values(dim, key=lambda s: s.map(lambda x: MESES_ORDEN.index(x) if x in MESES_ORDEN else x)),
                                            dim, tit, tipo, base)
+                        elif dim == "sexo" and set(d["sexo"]) <= {"Femenino", "Masculino"} and len(d):
+                            sexo_card(d, tipo, ref, base, nac)
                         elif dim == "departamento":
                             with st.container(key="sort_dep_" + pagina):
                                 vista = st.segmented_control("Vista", ["Mapa", "Ranking"], default="Mapa", key=f"vista_{base}",
