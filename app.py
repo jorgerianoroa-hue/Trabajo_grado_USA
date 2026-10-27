@@ -233,25 +233,26 @@ div[class*="st-key-pill_"] button p { color:inherit !important; }
 @media (max-width:900px) { div[class*="st-key-pill_"] [role="radiogroup"] { flex-wrap:wrap !important; } div[class*="st-key-pill_"] button { flex:1 1 28% !important; padding:0 4px !important; font-size:13px; } }
 /* Análisis sin desplazamiento vertical: las tarjetas toman el alto que queda en la pantalla (la lista de cada ranking se desplaza dentro de su tarjeta) */
 @media (min-width:1100px) and (min-height:640px) {
-    :root { --alto: calc(100vh - 348px); }
+    :root { --alto: calc(100vh - 314px); }
     .block-container:has(.st-key-filters) { padding-top:14px; padding-bottom:6px; }
     .block-container:has(.st-key-filters) [data-testid="stVerticalBlock"] { gap:.5rem; }
     .block-container:has(.st-key-filters) .page-title { font-size:22px; }
     .block-container:has(.st-key-filters) .page-sub { display:none; }
-    div[class*="st-key-pill_"] button { height:38px; }
-    .st-key-filters { padding:8px 14px; gap:6px; }
+    div[class*="st-key-pill_"] button { height:32px; font-size:13px; border-radius:8px; }
+    .st-key-filters { padding:4px 10px; gap:4px; border-radius:10px; }
     .st-key-filters .fh-s { display:none; }
-    .st-key-filters [data-baseweb="select"] > div { min-height:34px; }
-    .kpis { gap:8px; margin-bottom:.5rem; }
-    .kpi { padding:8px 14px; gap:1px; }
+    .st-key-filters [data-baseweb="select"] > div { min-height:30px; font-size:13px; }
+    .kpis { gap:8px; margin-bottom:.55rem; }
+    .kpi { padding:5px 12px; gap:0; border-radius:10px; }
+    .kpi { flex-flow:row wrap; align-items:baseline; column-gap:10px; } .kpi-l { font-size:11.5px; flex:0 0 100%; } .kpi-d { font-size:12px; }
     .kpi-s { display:none; }
-    .kpi-v { font-size:24px; } .kpi-v.sm { font-size:18px; }
-    .insight { padding:7px 14px; margin-bottom:.6rem; font-size:13px; }
+    .kpi-v { font-size:20px; } .kpi-v.sm { font-size:16px; }
+    .insight { padding:4px 12px; margin-bottom:.3rem; font-size:12px; }
     .fh-t, .fh-s { display:none; } .st-key-filters { position:relative; }
     .fh { position:absolute; top:-9px; right:16px; background:$SURFACE; padding:0 8px; line-height:1.2; margin:0; z-index:2; } .fh-c { font-size:12px; }
     .st-key-filters { gap:4px; }
     div[class*="st-key-helpclose_"], div[class*="st-key-helpbtn_"] { display:none; }
-    div[class*="st-key-card_formalidad_departamento"][class*="st-key-card"], div[class*="st-key-card_ingresos_departamento"][class*="st-key-card"] { height:calc(var(--alto) - 58px) !important; flex-basis:calc(var(--alto) - 58px) !important; }
+    div[class*="st-key-card_formalidad_departamento"][class*="st-key-card"], div[class*="st-key-card_ingresos_departamento"][class*="st-key-card"] { height:calc(var(--alto) - 50px) !important; flex-basis:calc(var(--alto) - 50px) !important; }
     div[class*="st-key-card_formalidad_"], div[class*="st-key-card_ingresos_"], div[class*="st-key-detail_formalidad"], div[class*="st-key-detail_ingresos"] {
         height:var(--alto); flex:0 0 var(--alto) !important; overflow:hidden; padding:14px 16px; gap:12px; }
     div[class*="st-key-card_formalidad_"] [data-testid="stElementContainer"]:has(.rk), div[class*="st-key-card_ingresos_"] [data-testid="stElementContainer"]:has(.rk) {
@@ -259,7 +260,7 @@ div[class*="st-key-pill_"] button p { color:inherit !important; }
     div[class*="st-key-detail_formalidad"], div[class*="st-key-detail_ingresos"] { overflow-y:auto; }
     div[class*="st-key-card_formalidad_"] [data-testid="stPlotlyChart"], div[class*="st-key-card_ingresos_"] [data-testid="stPlotlyChart"] { height:calc(var(--alto) - 110px) !important; }
     div[class*="st-key-card_formalidad_sexo"] [data-testid="stPlotlyChart"] { height:calc(var(--alto) - 125px) !important; }
-    div[class*="st-key-card_formalidad_sexo"] .card-sub { display:none; }
+    div[class*="st-key-card_formalidad_sexo"] .card-sub, div[class*="st-key-card_"][class*="_mapa"] .card-sub { display:none; }
     div[class*="st-key-detail_"] .eyebrow { margin-bottom:4px; }
     div[class*="st-key-card_"] [data-testid="stElementContainer"]:has(.card-head) { flex:0 0 auto !important; height:auto !important; min-height:max-content; overflow:visible; }
     div[class*="st-key-card_"] .card-head { row-gap:6px; }
@@ -267,6 +268,7 @@ div[class*="st-key-pill_"] button p { color:inherit !important; }
     div[class*="st-key-detail_"] [data-testid="stElementContainer"] { flex:0 0 auto; height:auto !important; min-height:max-content; overflow:visible; }
     div[class*="st-key-detail_"] [data-testid="stElementContainer"]:has(.d-grid){ margin-bottom:6px; }
     div[class*="st-key-card_formalidad_"] .js-plotly-plot, div[class*="st-key-card_ingresos_"] .js-plotly-plot { height:100% !important; }
+    div[class*="st-key-mapa"] [data-testid="stPlotlyChart"] { height:auto !important; }
     .foot { margin-top:.3rem; padding-top:.3rem; font-size:11px; }
     .help-card { display:none; }
 }
@@ -275,6 +277,9 @@ div[class*="st-key-pill_"] button p { color:inherit !important; }
 .rk-sm.rk-ti .rk-ax, .rk-sm.rk-ti .rk-row { grid-template-columns:20px minmax(70px, 118px) minmax(0, 1fr) 84px; }
 .rk-sm.rk-ti .rk-ax > :last-child, .rk-sm.rk-ti .rk-row > :last-child { display:none; }
 .rk-sm .rk-f, .rk-sm .rk-nf { font-size:10px; padding-right:4px; }
+div[class*="st-key-mapag_"], div[class*="st-key-mapam_"] { display:none !important; }
+@media (min-height:840px) { div[class*="st-key-mapam_"] { display:block !important; } div[class*="st-key-mapas_"] { display:none !important; } }
+@media (min-height:1000px) { div[class*="st-key-mapag_"] { display:block !important; } div[class*="st-key-mapam_"] { display:none !important; } }
 .mp-l { font-size:12px; color:$MUTED; margin:0 0 6px; letter-spacing:.04em; text-transform:uppercase; }
 .mp-r { display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-top:1px solid $HAIRLINE; font-size:13px; color:$TEXT; }
 .mp-r b { font-weight:600; white-space:nowrap; }
@@ -375,15 +380,15 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 @media (max-width:640px) { .st-key-chat { width:100vw !important; } }
 
 /* Encuesta del modelo predictivo */
-.sv-steps { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
-.sv-step { border-top:3px solid $HAIRLINE; padding-top:8px; font-size:13px; color:$MUTED; }
+.sv-steps { display:grid; grid-template-columns:1fr; gap:4px; }
+.sv-step { border-left:3px solid $HAIRLINE; padding:6px 0 6px 12px; font-size:14px; color:$MUTED; }
 .sv-step b { display:block; font-size:11px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; }
-.sv-step.done { border-top-color:$NOFORMAL; color:$MUTED2; }
-.sv-step.on { border-top-color:$PRIMARY_DARK; color:$PRIMARY_DARK; font-weight:600; }
-.sv-cv { background:#FFF4E6; color:$ACCENT_TEXT; border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.4; }
+.sv-step.done { border-left-color:$NOFORMAL; color:$MUTED2; }
+.sv-step.on { border-left-color:$PRIMARY_DARK; color:$PRIMARY_DARK; font-weight:600; }
+.sv-cv { margin-top:10px; background:#FFF4E6; color:$ACCENT_TEXT; border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.4; }
 .st-key-sv_editar_todo_btn button, .st-key-sv_abrir_cv_btn button { padding:0; min-height:0; font-size:13px; color:$PRIMARY; }
 .sv-tip { background:$TINT; color:$TEAL_TEXT; border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.4; }
-.sv-title { font-size:26px; font-weight:600; letter-spacing:-0.01em; line-height:1.2; margin-top:8px; }
+.sv-title { font-size:26px; font-weight:600; letter-spacing:-0.01em; line-height:1.2; margin-top:22px; }
 .sv-lead { font-size:14px; color:$MUTED; margin-top:4px; }
 .mv-tabs { display:flex; justify-content:center; gap:8px; margin:10px 0 18px; }
 .mv-tabs span { font-size:13px; font-weight:500; color:$MUTED; padding:6px 14px; border-radius:999px; background:$TRACK; }
@@ -395,7 +400,12 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 .sv-msg { border-radius:8px; padding:10px 14px; font-size:13px; line-height:1.5; margin-top:6px; }
 .sv-msg.advertencia { background:#FFF7EE; border:1px solid #F3DCC2; color:#4A2F14; }
 .sv-msg.bloqueo { background:#FBEAE5; border:1px solid #E8B9AA; color:#7A2410; }
-div[class*="st-key-card_encuesta"] { padding:28px; gap:14px; }
+div[class*="st-key-card_encuesta"] { padding:28px 32px; gap:14px; }
+.pf-grid { margin-bottom:14px; display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:6px 40px; margin-top:6px; }
+.rs-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px 48px; }
+@media (min-width:1000px) { div[class*="st-key-sv_split"] [data-testid="stColumn"]:first-child { border-right:1px solid $HAIRLINE; padding-right:12px; } }
+@media (max-width:900px) { div[class*="st-key-sv_split"] [data-testid="stHorizontalBlock"] { flex-wrap:wrap; } div[class*="st-key-sv_split"] [data-testid="stColumn"] { flex:1 1 100% !important; min-width:100% !important; }
+    .sv-steps { grid-template-columns:repeat(5, 1fr); gap:6px; } .sv-step { border-left:none; border-top:3px solid $HAIRLINE; padding:8px 0 0; font-size:13px; } .sv-step.done { border-top-color:$NOFORMAL; } .sv-step.on { border-top-color:$PRIMARY_DARK; } }
 div[class*="st-key-card_encuesta"] [data-baseweb="select"] > div, div[class*="st-key-card_encuesta"] [data-baseweb="input"] {
     background:$FIELD !important; border:1px solid $BORDER; border-radius:8px; min-height:44px; font-size:15px; }
 div[class*="st-key-card_encuesta"] [data-testid="stNumberInput"] { max-width:260px; }
@@ -412,7 +422,8 @@ div[class*="st-key-card_perfil"], div[class*="st-key-card_resultado"] { padding:
 .pf-row b { font-weight:500; color:$TEXT; text-align:right; }
 .pf-row b.vacio { color:#B5BDC2; }
 .pf-row i { font-style:normal; font-size:10px; color:$ACCENT_TEXT; border:1px solid $ACCENT; border-radius:999px; padding:0 6px; margin-left:6px; }
-div[class*="st-key-predecir_"] button { width:100%; height:48px; background:$PRIMARY; color:#FFFFFF; border:none; border-radius:8px; font-size:16px; font-weight:600; transition:background .15s; }
+div[class*="st-key-predecir_"] { display:flex; justify-content:flex-end; }
+div[class*="st-key-predecir_"] button { width:auto; padding:0 40px; height:46px; background:$PRIMARY; color:#FFFFFF; border:none; border-radius:8px; font-size:16px; font-weight:600; transition:background .15s; }
 div[class*="st-key-predecir_"] button:hover { background:#0E3340; color:#FFFFFF; }
 div[class*="st-key-predecir_"] button:disabled { background:$TRACK; color:$MUTED; opacity:1; }
 div[class*="st-key-predecir_"] button p { color:inherit; font-size:inherit; font-weight:inherit; }
@@ -961,7 +972,7 @@ def mapa_card(d, tipo, ref, base, nac):
         text=textos, hovertemplate="%{text}<extra></extra>",
         colorbar=dict(orientation="h", thickness=8, len=.55, x=.5, y=-.02, yanchor="top", outlinewidth=0, tickformat=fmt_cb,
                       tickfont=dict(size=11, color=MUTED), title=None, nticks=5)))
-    fig.update_maps(style="white-bg", center=dict(lat=4.8, lon=-74.0), zoom=4.35, bounds=dict(west=-86, east=-60, south=-8, north=17))
+    fig.update_maps(style="white-bg", center=dict(lat=4.6, lon=-74.0), zoom=4.0, bounds=dict(west=-86, east=-60, south=-8, north=17))
     fig.update_layout(**PLOTLY_LAYOUT)
     fig.update_layout(height=None, autosize=True, margin=dict(t=4, b=4, l=0, r=0),
                       hoverlabel=dict(bgcolor=SURFACE, bordercolor=BORDER, font=dict(family=F_BODY, size=12, color=TEXT), align="left"))
@@ -971,18 +982,24 @@ def mapa_card(d, tipo, ref, base, nac):
              f'<div class="card-sub">Pasa el cursor para ver las cifras y haz clic para elegir un departamento · San Andrés aparece en el recuadro del Pacífico</div></div>'
              f'<div class="legend">{leyenda}</div></div>')
         clave = f"{base}_map_{sel}"
-        cm, cl = st.columns([1.7, 1], gap="medium")
+        cm, cl = st.columns([3.3, 1], gap="medium")
         with cm:
-            st.plotly_chart(fig, config={"displayModeBar": False, "scrollZoom": False}, key=clave, selection_mode="points",
-                            on_select=lambda c=clave, b=base: al_elegir_en_mapa(c, b))
+            for sufijo, alto_px, zoom in (("s", 318, 3.7), ("m", 470, 4.15), ("g", 650, 4.65)):   # el CSS muestra el que cabe en la altura de la pantalla
+                f = go.Figure(fig)
+                f.update_maps(zoom=zoom, center=dict(lat=4.6, lon=-74.0))
+                f.update_layout(height=alto_px, autosize=True)
+                with st.container(key=f"mapa{sufijo}_{base}"):
+                    c2 = f"{clave}_{sufijo}"
+                    st.plotly_chart(f, config={"displayModeBar": False, "scrollZoom": False}, key=c2, selection_mode="points",
+                                    on_select=lambda c=c2, b=base: al_elegir_en_mapa(c, b))
         with cl:
             val = (lambda r: fmt_pct(r["mean"])) if pct else (lambda r: fmt_cop(r["mean"]))
             def lista(titulo, filas, cls):
                 return (f'<div class="mp-l">{titulo}</div>' + "".join(
                     f'<div class="mp-r {cls}"><span>{r["rank"]}. {escape(r["departamento"])}</span><b>{val(r)}</b></div>' for _, r in filas.iterrows()))
-            n = min(5, len(d) // 2)
+            n = min(3, len(d) // 2)
             if n:
-                html(lista("Más formalidad" if pct else "Mayor ingreso promedio", d.head(n), "hi")
+                html('<div style="height:22px"></div>' + lista("Más formalidad" if pct else "Mayor ingreso promedio", d.head(n), "hi")
                      + '<div style="height:18px"></div>' + lista("Menos formalidad" if pct else "Menor ingreso promedio", d.tail(n).iloc[::-1], "lo"))
 
 
@@ -1820,13 +1837,13 @@ def controles_paso(paso, sectores, sec_o, cat):
 def resultado_modelo(resp):
     """Dibuja la respuesta del backend (forma definida en la especificación)."""
     p, (bajo, alto) = resp["probabilidad_formal"], resp["ingreso_rango_80"]
-    html(f'<div class="rs"><div class="rs-l">Probabilidad de empleo formal pleno</div>'
+    html(f'<div class="rs-grid"><div class="rs"><div class="rs-l">Probabilidad de empleo formal pleno</div>'
          f'<div class="rs-v" style="color:{PRIMARY}">{fmt_pct(p)}</div>'
          f'<div class="d-stack"><span style="width:{p * 100:.1f}%;background:{PRIMARY}"></span><span style="flex:1;background:{NOFORMAL}"></span></div></div>'
          f'<div class="rs"><div class="rs-l">Ingreso laboral mensual típico (mediana)</div>'
          f'<div class="rs-v" style="color:{ACCENT_TEXT}">{fmt_cop(resp["ingreso_mediana"])}</div>'
          f'<div class="rs-r">Rango del 80%: {fmt_cop(bajo)} – {fmt_cop(alto)}</div>'
-         f'<div class="sv-h">Pesos nominales de 2025. El modelo tiende a subestimar los ingresos altos; por eso el rango acompaña siempre al valor central.</div></div>')
+         f'<div class="sv-h">Pesos nominales de 2025. El modelo tiende a subestimar los ingresos altos; por eso el rango acompaña siempre al valor central.</div></div></div>')
     for i in resp.get("advertencias", []):
         aviso(dict(tipo="advertencia", msg=MENSAJES_REGLA.get(i, f"El perfil activó la regla {i}.")))
 
@@ -1880,7 +1897,7 @@ def pagina_modelo(df_raw):
     encabezado("Modelo predictivo", subs[vista])
     pasos_vista = [("preguntas", "1  Preguntas"), ("resumen", "2  Resumen"), ("resultado", "3  Resultado")]
     html('<div class="mv-tabs">' + "".join(f'<span class="{"on" if k == vista else ""}">{n}</span>' for k, n in pasos_vista) + '</div>')
-    _, centro, _ = st.columns([1, 2.4, 1])
+    _, centro, _ = st.columns([0.2, 3.6, 0.2])
 
     with centro:
         if vista == "preguntas":
@@ -1888,39 +1905,43 @@ def pagina_modelo(df_raw):
                 segmentos = "".join(
                     f'<div class="sv-step {"on" if i == paso else "done" if i < paso else ""}"><b>Paso {i + 1}</b>{n}</div>'
                     for i, (n, *_ ) in enumerate(PASOS))
-                html(f'<div class="sv-steps">{segmentos}</div>')
                 _, titular, intro, campos = PASOS[paso]
-                html(f'<div><div class="sv-title">{titular}</div><div class="sv-lead">{intro}</div></div>')
-                cvc = ss.get("m_cv_campos")
-                if cvc:
-                    editar = ss.get("m_editar_todo", False)
-                    html(f'<div class="sv-cv"><b>Completamos {len(cvc)} de {len(CAMPOS)} datos con tu hoja de vida.</b> '
-                         + ("Ahora ves todas las preguntas para que puedas corregir lo que quieras." if editar else "Solo te preguntamos lo que falta.") + '</div>')
-                    st.button("Volver a solo lo que falta" if editar else "Revisar o editar todas las respuestas", key="sv_editar_todo_btn",
-                              on_click=alternar_editar_todo, type="tertiary")
-                elif paso == 0:
-                    html('<div class="sv-cv"><b>¿Tienes tu hoja de vida a la mano?</b> Súbela al asistente y llenamos la encuesta por ti; solo te preguntamos lo que falte.</div>')
-                    st.button("Subir mi hoja de vida", key="sv_abrir_cv_btn", on_click=abrir_chat, type="tertiary", icon=":material/upload_file:")
-                html('<div class="sv-tip"><b>Si no ves tu situación exacta,</b> elige la opción que más se acerque a ella.</div>')
-                controles_paso(paso, sectores, sec_o, cat)
-                r = respuestas()
-                p = completar(r, sec_o)
-                avisos = validar(p)
-                bloqueos = [m for m in avisos if m["tipo"] == "bloqueo"]
-                for m in avisos:
-                    if m["paso"] == paso:
-                        aviso(m)
-                paso_completo = all(p[c] is not None for c in campos) and not any(m["paso"] == paso for m in bloqueos)
-                c1, c2 = st.columns(2, vertical_alignment="center")
-                with c1, st.container(key="svback"):
-                    if hay_anterior_visible(paso):
-                        st.button("←  Atrás", key="sv_back_btn", on_click=paso_menos)
-                with c2, st.container(key="svnext"):
-                    if paso_completo:
-                        if siguiente_visible_existe(paso):
-                            st.button("Siguiente  →", key="sv_next_btn", on_click=paso_mas)
-                        else:
-                            st.button("Ver resumen  →", key="sv_resumen_btn", on_click=ir_vista, args=("resumen",))
+                with st.container(key="sv_split"):
+                  izq, der = st.columns([1, 1.9], gap="large")
+                with izq:
+                    html(f'<div class="sv-steps">{segmentos}</div>')
+                    html(f'<div><div class="sv-title">{titular}</div><div class="sv-lead">{intro}</div></div>')
+                    cvc = ss.get("m_cv_campos")
+                    if cvc:
+                        editar = ss.get("m_editar_todo", False)
+                        html(f'<div class="sv-cv"><b>Completamos {len(cvc)} de {len(CAMPOS)} datos con tu hoja de vida.</b> '
+                             + ("Ahora ves todas las preguntas para que puedas corregir lo que quieras." if editar else "Solo te preguntamos lo que falta.") + '</div>')
+                        st.button("Volver a solo lo que falta" if editar else "Revisar o editar todas las respuestas", key="sv_editar_todo_btn",
+                                  on_click=alternar_editar_todo, type="tertiary")
+                    elif paso == 0:
+                        html('<div class="sv-cv"><b>¿Tienes tu hoja de vida a la mano?</b> Súbela al asistente y llenamos la encuesta por ti; solo te preguntamos lo que falte.</div>')
+                        st.button("Subir mi hoja de vida", key="sv_abrir_cv_btn", on_click=abrir_chat, type="tertiary", icon=":material/upload_file:")
+                    html('<div class="sv-tip"><b>Si no ves tu situación exacta,</b> elige la opción que más se acerque a ella.</div>')
+                with der:
+                    controles_paso(paso, sectores, sec_o, cat)
+                    r = respuestas()
+                    p = completar(r, sec_o)
+                    avisos = validar(p)
+                    bloqueos = [m for m in avisos if m["tipo"] == "bloqueo"]
+                    for m in avisos:
+                        if m["paso"] == paso:
+                            aviso(m)
+                    paso_completo = all(p[c] is not None for c in campos) and not any(m["paso"] == paso for m in bloqueos)
+                    c1, c2 = st.columns(2, vertical_alignment="center")
+                    with c1, st.container(key="svback"):
+                        if hay_anterior_visible(paso):
+                            st.button("←  Atrás", key="sv_back_btn", on_click=paso_menos)
+                    with c2, st.container(key="svnext"):
+                        if paso_completo:
+                            if siguiente_visible_existe(paso):
+                                st.button("Siguiente  →", key="sv_next_btn", on_click=paso_mas)
+                            else:
+                                st.button("Ver resumen  →", key="sv_resumen_btn", on_click=ir_vista, args=("resumen",))
         elif vista == "resumen":
             with st.container(key="card_perfil"):
                 grupos = ""
@@ -1929,8 +1950,8 @@ def pagina_modelo(df_raw):
                     filas = "".join(
                         f'<div class="pf-row"><span>{ETIQUETAS[c]}</span><b>{escape(mostrar_valor(c, p[c]))}'
                         f'{"<i>auto</i>" if r[c] is None else "<i>CV</i>" if c in cvset else ""}</b></div>' for c in campos)
-                    grupos += f'<div class="pf-g">{nombre}</div>{filas}'
-                html(f'<div class="card-head"><div class="eyebrow">Tu perfil</div><div class="card-sub" style="margin:0">{len(CAMPOS)} respuestas</div></div><div>{grupos}</div>')
+                    grupos += f'<div class="pf-box"><div class="pf-g">{nombre}</div>{filas}</div>'
+                html(f'<div class="card-head"><div class="eyebrow">Tu perfil</div><div class="card-sub" style="margin:0">{len(CAMPOS)} respuestas</div></div><div class="pf-grid">{grupos}</div>')
                 for m in avisos:
                     aviso(m)
                 payload = {c: p[c] for c in CAMPOS}
