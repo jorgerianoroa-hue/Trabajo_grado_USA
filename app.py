@@ -25,7 +25,7 @@ st.set_page_config(
     page_title="Mercado laboral de Colombia",
     page_icon="◆",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="auto",
 )
 
 DATA_PATH = Path(__file__).parent / "datos_reducidos.parquet"
@@ -112,10 +112,13 @@ CSS = Template("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap');
 html, body, [class*="css"], .stApp { font-family:'$F_BODY',sans-serif; color:$TEXT; }
 .stApp { background:$BG; }
-.block-container { max-width:none; padding:24px clamp(16px, 2.4vw, 44px) 56px; }
-header[data-testid="stHeader"], [data-testid="stDecoration"], [data-testid="stStatusWidget"] { display:none !important; }
+.block-container { max-width:none; padding:clamp(40px, 7vh, 72px) clamp(16px, 2.4vw, 44px) 56px; }
+header[data-testid="stHeader"] { background:transparent !important; height:0 !important; min-height:0 !important; pointer-events:none; }
+header[data-testid="stHeader"] [data-testid="stExpandSidebarButton"], header[data-testid="stHeader"] [data-testid="stSidebarCollapsedControl"] { pointer-events:auto; }
+[data-testid="stDecoration"], [data-testid="stStatusWidget"] { display:none !important; }
 footer { visibility:hidden; }
-[data-testid="stToolbar"] { display:none; }
+[data-testid="stToolbarActions"], [data-testid="stMainMenu"], [data-testid="stAppDeployButton"], .stAppDeployButton { display:none !important; }
+[data-testid="stToolbar"] { pointer-events:none; background:transparent; }
 [data-testid="stVerticalBlock"] { gap:1rem; }
 [data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] p, .stButton button, .stButton button p,
 .stTabs [data-baseweb="tab"] p, label, input, [data-baseweb="select"] { font-family:'$F_BODY',sans-serif !important; }
@@ -123,31 +126,32 @@ footer { visibility:hidden; }
 .foot { border-top:1px solid $HAIRLINE; color:$MUTED; font-size:13px; margin-top:2.5rem; padding-top:1rem; }
 .tag { color:$ACCENT_TEXT; font-size:11px; font-weight:500; border:1px solid $ACCENT; border-radius:999px; padding:2px 8px; margin-left:8px; vertical-align:middle; }
 
-/* Navegación superior: marca (con ícono de inicio) a la izquierda, secciones a la derecha */
-.brand { font-weight:600; font-size:18px; color:$PRIMARY_DARK; white-space:nowrap; }
-.st-key-nav { flex-direction:row !important; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.4rem 2rem; }
-.st-key-nav > * { width:auto !important; min-width:0; flex:0 0 auto; }
-.st-key-nav > :last-child { flex:1 1 auto !important; }
-.st-key-nav [data-testid="stHorizontalBlock"] { flex-wrap:nowrap; align-items:center; gap:24px; }
-.st-key-nav [data-testid="stColumn"] { flex:0 0 auto !important; width:auto !important; min-width:0 !important; }
-.st-key-nav_brand [data-testid="stHorizontalBlock"] { gap:6px; }
-.st-key-nav_items [data-testid="stHorizontalBlock"] { justify-content:flex-end; }
-.st-key-nav button { width:auto; min-height:0; padding:0 0 8px; background:transparent; border:none;
-    border-bottom:2px solid transparent; border-radius:0; color:$MUTED2; font-weight:400; font-size:14px; white-space:nowrap;
-    transition:color .15s, border-color .15s; }
-.st-key-nav button:hover { color:$TEXT; background:transparent; border-bottom-color:$HAIRLINE; }
+/* Navegación lateral: marca (casita + nombre) arriba y secciones con íconos debajo */
+section[data-testid="stSidebar"] { background:$SURFACE; border-right:1px solid $HAIRLINE; }
+@media (min-width:769px) { section[data-testid="stSidebar"][aria-expanded="true"] { width:264px !important; min-width:264px !important; } }
+section[data-testid="stSidebar"] > div:first-child { width:100%; }
+[data-testid="stSidebarHeader"] { padding:10px 12px 0; height:auto; min-height:0; }
+[data-testid="stSidebarContent"] { padding:0 12px 24px; }
+[data-testid="stSidebarUserContent"] { padding:4px 0 0; }
+.st-key-nav { gap:4px; }
+.st-key-nav button { width:100%; min-height:0; justify-content:flex-start; gap:12px; padding:11px 14px; background:transparent; border:none;
+    border-radius:10px; color:$MUTED2; font-weight:500; font-size:14px; text-align:left; transition:background .15s, color .15s; }
+.st-key-nav button > div { justify-content:flex-start; text-align:left; gap:12px; }
+.st-key-nav button:hover { color:$TEXT; background:$FIELD; }
 .st-key-nav button[kind="primary"], .st-key-nav button[data-testid="stBaseButton-primary"],
 .st-key-nav button[kind="primary"]:hover, .st-key-nav button[data-testid="stBaseButton-primary"]:hover {
-    color:$PRIMARY_DARK; font-weight:600; border-bottom-color:$PRIMARY_DARK; background:transparent; }
-.st-key-nav button p { color:inherit; font-size:inherit; font-weight:inherit; }
-.st-key-nav_inicio button { color:$PRIMARY_DARK; padding:0; border-bottom:none; }
-.st-key-nav_inicio button:hover { color:$PRIMARY; border-bottom:none; }
-.st-key-nav_inicio button p { display:none; }
-.st-key-nav_inicio button span[data-testid="stIconMaterial"] { font-size:24px; }
+    color:$PRIMARY_DARK; font-weight:600; background:$TINT; box-shadow:inset 3px 0 0 $PRIMARY_DARK; }
+.st-key-nav button p { color:inherit; font-size:inherit; font-weight:inherit; line-height:1.3; text-align:left; }
+.st-key-nav button span[data-testid="stIconMaterial"] { font-size:22px; flex:0 0 auto; }
+.st-key-nav_inicio { margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid $HAIRLINE; }
+.st-key-nav_inicio button { padding:8px 14px; color:$PRIMARY_DARK; font-weight:600; font-size:18px; }
+.st-key-nav_inicio button:hover { color:$PRIMARY; background:transparent; }
+.st-key-nav_inicio button span[data-testid="stIconMaterial"] { font-size:26px; }
+[data-testid="stExpandSidebarButton"], [data-testid="stSidebarCollapsedControl"] { display:flex !important; position:fixed; top:12px; left:12px; z-index:999; }
 
 /* Encabezado de página */
 .page-title { font-size:28px; font-weight:600; letter-spacing:-0.01em; line-height:1.2; }
-.page-sub { color:$MUTED; font-size:15px; margin-top:6px; }
+.page-sub { color:$MUTED; font-size:15px; margin-top:6px; margin-bottom:10px; }
 
 /* Panel de filtros */
 .st-key-filters { background:$SURFACE; border:1px solid $BORDER; border-radius:12px; padding:18px 20px; gap:14px; }
@@ -321,7 +325,7 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 .sv-tip { background:$TINT; color:$TEAL_TEXT; border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.4; }
 .sv-title { font-size:26px; font-weight:600; letter-spacing:-0.01em; line-height:1.2; margin-top:8px; }
 .sv-lead { font-size:14px; color:$MUTED; margin-top:4px; }
-.mv-tabs { display:flex; justify-content:center; gap:8px; margin:-4px 0 18px; }
+.mv-tabs { display:flex; justify-content:center; gap:8px; margin:10px 0 18px; }
 .mv-tabs span { font-size:13px; font-weight:500; color:$MUTED; padding:6px 14px; border-radius:999px; background:$TRACK; }
 .mv-tabs span.on { background:$PRIMARY; color:#FFFFFF; }
 .pf-g { font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:$MUTED; margin:16px 0 2px; }
@@ -360,7 +364,7 @@ div[class*="st-key-predecir_"] button p { color:inherit; font-size:inherit; font
 
 /* Más espacio para las gráficas: cabecera, filtros y cifras más compactos */
 @media (min-width:901px) {
-    .block-container { padding-top:12px; }
+    .block-container { padding-top:clamp(36px, 6vh, 60px); }
     [data-testid="stVerticalBlock"] { gap:.7rem; }
     .page-title { font-size:26px; } .page-sub { margin-top:2px; font-size:14px; }
     .st-key-filters { padding:12px 18px; gap:8px; }
@@ -405,6 +409,7 @@ div[class*="st-key-predecir_"] button p { color:inherit; font-size:inherit; font
 """)
 
 CSS_PORTADA = Template("""
+section[data-testid="stSidebar"], [data-testid="stExpandSidebarButton"], [data-testid="stSidebarCollapsedControl"] { display:none !important; }
 <style>
 /* Portada (modo oscuro): el mapa es el fondo de toda la app mientras se muestra la portada */
 .stApp:has(.cover-content) { background-color:#0B1D27; background-image:radial-gradient(ellipse at center, #14333F 0%, #0B1D27 68%);
@@ -1042,19 +1047,17 @@ NAV = [("formalidad", "Análisis descriptivo formalidad"), ("ingresos", "Anális
        ("modelo", "Modelo predictivo")]
 
 
+NAV_ICONOS = {"formalidad": ":material/badge:", "ingresos": ":material/payments:", "modelo": ":material/query_stats:"}
+
+
 def barra_nav():
-    with st.container(key="nav"):
-        with st.container(key="nav_brand"):
-            icono, marca = st.columns([1, 6], vertical_alignment="center")
-            with icono:
-                st.button("Inicio", key="nav_inicio", icon=":material/home:", help="Ir a la portada",
-                          on_click=ir, args=("inicio",))
-            marca.markdown('<div class="brand">Mercado laboral</div>', unsafe_allow_html=True)
-        with st.container(key="nav_items"):
-            for col, (k, etiqueta) in zip(st.columns(len(NAV), vertical_alignment="center"), NAV):
-                col.button(etiqueta, key=f"nav_{k}", on_click=ir, args=(k,),
-                           type="primary" if st.session_state.page == k else "secondary")
-    st.markdown('<hr class="rule">', unsafe_allow_html=True)
+    with st.sidebar, st.container(key="nav"):
+        with st.container(key="nav_inicio"):
+            st.button("Mercado laboral", key="nav_inicio_btn", icon=":material/home:", help="Ir a la portada",
+                      on_click=ir, args=("inicio",))
+        for k, etiqueta in NAV:
+            st.button(etiqueta, key=f"nav_{k}", icon=NAV_ICONOS[k], on_click=ir, args=(k,),
+                      type="primary" if st.session_state.page == k else "secondary", use_container_width=True)
 
 
 FILTROS = [("anio", "Año"), ("Mes Letras", "Mes"), ("departamento", "Departamento"),
