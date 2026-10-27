@@ -658,7 +658,7 @@ GRUPOS = [
     ("Demografía", [[("sexo", "por sexo", {}), ("estado_civil", "por estado civil", {})],
                     [("etnia", "por etnia", {"ancho": True})]]),
     ("Contrato", [[("tipo_contrato", "por tipo de contrato", {}), ("posicion_ocupacional", "por posición ocupacional", {})],
-                  [("lugar_trabajo", "por lugar de trabajo", {})]]),
+                  [("lugar_trabajo", "por lugar de trabajo", {"ancho": True})]]),
     ("Sector", [[("sector_economico_seccion", "por sector económico", {})]]),
     ("Oficio", [[("oficio_gran_grupo", "por oficio", {})]]),
 ]
@@ -1016,9 +1016,9 @@ def bloque_graficos(df, tipo, pagina, ref, ref2, nac):
                             if vista == "Mapa":
                                 mapa_card(d, tipo, ref, base, nac)
                             else:
-                                ranking_card(d, dim, tit, tipo, ref, base, nac, solo)
+                                ranking_card(d, dim, tit, tipo, ref, base, nac, solo or bool(ancho))
                         else:
-                            ranking_card(d, dim, tit, tipo, ref, base, nac, solo)
+                            ranking_card(d, dim, tit, tipo, ref, base, nac, solo or bool(ancho))
                 if solo and not fila[0][2].get("tendencia"):
                     with cols[1]:
                         base = f"{pagina}_{fila[0][0]}"
