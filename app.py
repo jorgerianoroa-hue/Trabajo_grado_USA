@@ -1403,26 +1403,26 @@ CLAVES = {"edad": "m_edad", "sexo": "m_sexo", "estado_civil": "m_civil", "nivel_
 ETIQUETAS = {"edad": "Edad", "sexo": "Sexo", "estado_civil": "Estado civil", "nivel_educativo": "Nivel educativo",
              "sabe_leer_escribir": "Sabe leer y escribir", "asiste_institucion_educ": "Estudia actualmente",
              "area_titulo_campo_amplio": "Área del título", "departamento": "Departamento", "zona": "Zona",
-             "tipo_contrato": "Contrato", "lugar_trabajo": "Lugar de trabajo", "medio_consiguio_empleo": "Cómo consiguió el empleo",
+             "tipo_contrato": "Contrato", "lugar_trabajo": "Lugar de trabajo", "medio_consiguio_empleo": "Cómo espera conseguir el empleo",
              "sector_economico_seccion": "Sector", "oficio_gran_grupo": "Oficio", "minutos_desplazamiento": "Desplazamiento"}
 PASOS = [  # (nombre, titular, introducción, campos que se piden)
     ("Sobre ti", "Cuéntanos sobre ti", "Empecemos por lo básico.", ["edad", "sexo", "estado_civil"]),
     ("Educación", "Tu formación", "Cuenta también lo que estás cursando.",
      ["nivel_educativo", "sabe_leer_escribir", "asiste_institucion_educ", "area_titulo_campo_amplio"]),
-    ("Ubicación", "¿Dónde trabajas?", "Donde trabajas o buscas trabajo.", ["departamento", "zona"]),
-    ("Ocupación", "¿Qué haces?", "Primero el oficio y luego el sector de la empresa.", ["oficio_gran_grupo", "sector_economico_seccion"]),
-    ("Condiciones", "Cómo es tu trabajo", "Lugar, contrato y desplazamiento.",
+    ("Ubicación", "¿Dónde quieres trabajar?", "El lugar donde te gustaría conseguir empleo.", ["departamento", "zona"]),
+    ("Ocupación", "¿A qué te quieres dedicar?", "Primero el tipo de oficio y luego el sector de la empresa que te interesa.", ["oficio_gran_grupo", "sector_economico_seccion"]),
+    ("Condiciones", "El trabajo que buscas", "Lugar, contrato y desplazamiento que esperas.",
      ["lugar_trabajo", "tipo_contrato", "medio_consiguio_empleo", "minutos_desplazamiento"]),
 ]
 MENSAJES_REGLA = {  # texto de las advertencias que devuelve el backend por ID
     "R-02": "La edad supera los 75 años: hay pocos casos y el resultado es menos confiable.",
     "R-07": "Casado(a), viudo(a) o separado(a) con menos de 18 años es una combinación poco común.",
-    "R-10": "Trabajas en tu vivienda y el desplazamiento supera 30 minutos: revísalo.",
+    "R-10": "Quieres trabajar en tu vivienda y el desplazamiento supera 30 minutos: revísalo.",
     "R-12": "Más de 180 minutos de desplazamiento es un valor atípico.",
     "R-13": "Ese oficio normalmente exige educación superior.",
-    "R-14": "Ser director o gerente con menos de 20 años es una combinación poco común.",
-    "R-15": "Trabajar en mina o cantera suele corresponder al sector de minas: revisa el sector.",
-    "R-16": "Trabajar en obra suele corresponder al sector de construcción: revisa el sector.",
+    "R-14": "Aspirar a ser director o gerente con menos de 20 años es una combinación poco común.",
+    "R-15": "Buscar trabajo en mina o cantera suele corresponder al sector de minas: revisa el sector.",
+    "R-16": "Buscar trabajo en obra suele corresponder al sector de construcción: revisa el sector.",
     "R-17": "Hogares como empleadores con oficio directivo o profesional es una combinación muy poco común.",
 }
 
@@ -1692,10 +1692,10 @@ def controles_paso(paso, sectores, sec_o, cat):
             nota("No necesitas indicar el área del título: la completamos como «Sin título».")
     elif paso == 2:
         if ver("departamento"):
-            pregunta("¿En qué departamento trabajas o buscas trabajo?", "Puedes escribir para buscar.")
+            pregunta("¿En qué departamento te gustaría trabajar?", "Puedes escribir para buscar.")
             st.selectbox("Departamento", cat["departamento"], index=None, placeholder="Selecciona el departamento", key="m_dep", label_visibility="collapsed")
         if hecho("departamento") and (ver("zona") or r["departamento"] in DEP_SOLO_CABECERA and ver("departamento")):
-            pregunta("¿Vives en la cabecera municipal o en zona rural?")
+            pregunta("¿Prefieres trabajar en la cabecera municipal o en zona rural?")
             solo = r["departamento"] in DEP_SOLO_CABECERA
             st.radio("Zona", ["Cabecera", "Resto"], index=None, horizontal=True, key="m_zona", format_func=etiqueta_zona,
                      disabled=solo, label_visibility="collapsed")
@@ -1703,13 +1703,13 @@ def controles_paso(paso, sectores, sec_o, cat):
                 nota("En este departamento la encuesta solo cubre cabeceras, así que lo completamos por ti.")
     elif paso == 3:
         if ver("oficio_gran_grupo"):
-            pregunta("¿Qué tipo de oficio haces?", "Elige el que más se parezca a tu trabajo.")
+            pregunta("¿Qué tipo de oficio te gustaría desempeñar?", "Elige el que más se parezca al trabajo que buscas.")
             st.selectbox("Oficio", cat["oficio"], index=None, placeholder="Selecciona tu tipo de oficio",
                          format_func=lambda v: OFICIOS[v][0], key="m_oficio", label_visibility="collapsed")
             if r["oficio_gran_grupo"]:
                 nota("Por ejemplo: " + OFICIOS[r["oficio_gran_grupo"]][1] + ".")
         if hecho("oficio_gran_grupo") and (ver("sector_economico_seccion") or r["oficio_gran_grupo"] == MILITAR):
-            pregunta("¿A qué sector pertenece la empresa donde trabajas?", "Puedes escribir para buscar.")
+            pregunta("¿En qué sector te gustaría trabajar?", "Puedes escribir para buscar.")
             auto = r["oficio_gran_grupo"] == MILITAR and sec_o
             st.selectbox("Sector", sectores, index=None, placeholder="Selecciona el sector", format_func=etiqueta_sector,
                          key="m_sector", disabled=bool(auto), label_visibility="collapsed")
@@ -1717,17 +1717,17 @@ def controles_paso(paso, sectores, sec_o, cat):
                 nota("Para Fuerzas Militares completamos el sector de administración pública y defensa.")
     else:
         if ver("lugar_trabajo"):
-            pregunta("¿Dónde realizas tu trabajo?")
+            pregunta("¿Dónde te gustaría realizar tu trabajo?")
             st.selectbox("Lugar de trabajo", cat["lugar"], index=None, placeholder="Selecciona el lugar", key="m_lugar",
                          on_change=al_cambiar_lugar, label_visibility="collapsed")
         if hecho("lugar_trabajo") and ver("tipo_contrato"):
-            pregunta("¿Qué tipo de contrato tienes?", "El actual o el que esperas.")
+            pregunta("¿Qué tipo de contrato buscas?", "El que esperas o prefieres.")
             st.radio("Tipo de contrato", cat["contrato"], index=None, horizontal=True, key="m_contrato", label_visibility="collapsed")
         if hecho("lugar_trabajo") and hecho("tipo_contrato") and ver("medio_consiguio_empleo"):
-            pregunta("¿Cómo conseguiste (o buscas) el empleo?")
+            pregunta("¿Por qué medio piensas conseguir el empleo?")
             st.selectbox("Medio", MEDIOS, index=None, placeholder="Selecciona una opción", key="m_medio", label_visibility="collapsed")
         if hecho("lugar_trabajo") and hecho("tipo_contrato") and hecho("medio_consiguio_empleo") and ver("minutos_desplazamiento"):
-            pregunta("¿Cuántos minutos tardas en llegar al trabajo?", "Solo ida, entre 0 y 300. Si trabajas en tu vivienda, es 0.")
+            pregunta("¿Cuántos minutos estarías dispuesto(a) a tardar en llegar al trabajo?", "Solo ida, entre 0 y 300. Si quieres trabajar desde tu vivienda, es 0.")
             st.selectbox("Minutos de desplazamiento", MINUTOS, index=None, placeholder="Selecciona o escribe los minutos",
                          format_func=lambda v: "0 min (no me desplazo)" if v == 0 else f"{v} min", key="m_min", label_visibility="collapsed")
             nota("Si tu tiempo exacto no aparece, elige el más cercano.")
