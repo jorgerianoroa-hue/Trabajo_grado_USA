@@ -186,7 +186,7 @@ div[class*="st-key-chip_"] button:hover { background:#DCEAE6; color:$PRIMARY_DAR
 .up { color:$PRIMARY; } .down { color:$ACCENT_TEXT; }
 
 /* Franja de lectura */
-.insight { display:flex; flex-wrap:wrap; align-items:center; gap:12px; background:$TINT; border-radius:12px; padding:14px 18px; font-size:14px; color:$PRIMARY_DARK; }
+.insight { display:flex; flex-wrap:wrap; align-items:center; gap:12px; background:$TINT; border-radius:12px; padding:14px 18px; margin-bottom:.9rem; font-size:14px; color:$PRIMARY_DARK; }
 .insight strong { font-weight:600; }
 .ins-dot { width:8px; height:8px; border-radius:50%; background:$PRIMARY_DARK; flex:none; }
 
@@ -218,6 +218,18 @@ div[class*="st-key-sort_"] button[kind="segmented_controlActive"], div[class*="s
 .dn-cap { display:flex; flex-direction:column; align-items:center; gap:2px; text-align:center; font-size:12px; color:$MUTED; }
 .dn-cap b { font-size:14px; color:$TEXT; font-weight:600; }
 .dn-cap i { font-style:normal; font-weight:600; } .dn-cap i.up { color:$PRIMARY; } .dn-cap i.down { color:$ACCENT_TEXT; }
+div[class*="st-key-pill_"] { margin-bottom:-.2rem; }
+div[class*="st-key-pill_"] [data-testid="stButtonGroup"], div[class*="st-key-pill_"] [data-testid="stElementContainer"] { width:100% !important; }
+div[class*="st-key-pill_"] [role="radiogroup"] { display:flex; flex-wrap:nowrap; gap:8px; width:100% !important; max-width:none !important; }
+
+div[class*="st-key-pill_"] button { flex:1 1 0; min-width:0; white-space:nowrap; height:42px; min-height:0; padding:0 14px; border:1px solid $BORDER; border-radius:10px;
+    background:$SURFACE; color:$MUTED2; font-size:14px; font-weight:500; transition:background .15s, color .15s, border-color .15s; }
+div[class*="st-key-pill_"] button:hover { background:$FIELD; color:$TEXT; }
+div[class*="st-key-pill_"] button[kind="segmented_controlActive"], div[class*="st-key-pill_"] button[data-testid="stBaseButton-segmented_controlActive"],
+div[class*="st-key-pill_"] button[data-selected="true"], div[class*="st-key-pill_"] button[aria-checked="true"] {
+    background:$PRIMARY_DARK !important; color:#FFFFFF !important; border-color:$PRIMARY_DARK !important; font-weight:600; }
+div[class*="st-key-pill_"] button p { color:inherit !important; }
+@media (max-width:900px) { div[class*="st-key-pill_"] [role="radiogroup"] { flex-wrap:wrap !important; } div[class*="st-key-pill_"] button { flex:1 1 28% !important; padding:0 4px !important; font-size:13px; } }
 .mp-l { font-size:12px; color:$MUTED; margin:0 0 6px; letter-spacing:.04em; text-transform:uppercase; }
 .mp-r { display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-top:1px solid $HAIRLINE; font-size:13px; color:$TEXT; }
 .mp-r b { font-weight:600; white-space:nowrap; }
@@ -774,7 +786,7 @@ def ranking_card(d, dim, titulo, tipo, ref, base, nac, completo):
                 cols_ax = '<span class="r">vs. promedio</span>'
             else:
                 xmax = float(d[["mean", "median"]].max().max()) or 1.0
-                escala = "".join(f"<span>{fmt_corto(xmax * p)}</span>" for p in (0, .25, .5, .75, 1))
+                escala = "".join(f"<span>{fmt_corto(xmax * p)}</span>" for p in (0, .5, 1))
                 cols_ax = '<span class="r">Promedio</span><span class="r">vs. promedio</span>'
             html(f'<div class="rk{" rk-ti" if tipo == "ingresos" else ""}">'
                  f'<div class="rk-ax"><span>#</span><span>{sing.capitalize()}</span><span class="scale">{escala}</span>{cols_ax}</div>'
@@ -1001,10 +1013,25 @@ def ayuda_card(pagina):
                       on_click=lambda: st.session_state.update({k: True}))
 
 
-def bloque_graficos(df, tipo, pagina, ref, ref2, nac):
-    tabs = st.tabs([g[0] for g in GRUPOS])
-    for gi, (tab, (_, filas)) in enumerate(zip(tabs, GRUPOS)):
-        with tab:
+def selector_grupo(pagina):
+    """Botones de grupo (Departamento, Tiempo, Educación…) encima de los filtros. Devuelve el grupo elegido."""
+    nombres = [g[0] for g in GRUPOS]
+    k = f"grupo_{pagina}"
+    with st.container(key=f"pill_{pagina}"):
+        if hasattr(st, "segmented_control"):
+            v = st.segmented_control("Grupo de gráficos", nombres, default=nombres[0], selection_mode="single", key=k, label_visibility="collapsed")
+        else:
+            v = st.radio("Grupo de gráficos", nombres, horizontal=True, key=k, label_visibility="collapsed")
+    return v or st.session_state.get(f"_{k}_ult", nombres[0])
+
+
+def bloque_graficos(df, tipo, pagina, ref, ref2, nac, grupo=None):
+    elegido = grupo or GRUPOS[0][0]
+    st.session_state[f"_grupo_{pagina}_ult"] = elegido
+    for gi, (nombre_g, filas) in enumerate(GRUPOS):
+        if nombre_g != elegido:
+            continue
+        if True:
             for fila in filas:
                 ancho = len(fila) == 1 and fila[0][2].get("ancho")      # una sola tarjeta a todo el ancho, sin panel de detalle
                 solo = len(fila) == 1 and not ancho
@@ -1291,6 +1318,7 @@ def pagina_inicio(df_raw=None):
 
 def pagina_formalidad(df_raw):
     encabezado("Análisis descriptivo formalidad", "Proporción de personas ocupadas con empleo formal y no formal en Colombia.")
+    grupo = selector_grupo("formalidad")
     df, activos = panel_filtros(df_raw, "formalidad")
     if df.empty:
         sin_registros()
@@ -1315,12 +1343,13 @@ def pagina_formalidad(df_raw):
         brecha = (deptos["mean"].iloc[0] - deptos["mean"].iloc[-1]) * 100
         franja(f'<strong>{k} de {len(deptos)}</strong> departamentos superan el promedio {nac} de formalidad. '
                f'La brecha entre el más formal y el menos formal es de <strong>{f"{brecha:.1f}".replace(".", ",")} puntos porcentuales</strong>.')
-    bloque_graficos(df, "formalidad", "formalidad", pf, None, nac)
+    bloque_graficos(df, "formalidad", "formalidad", pf, None, nac, grupo)
     pie()
 
 
 def pagina_ingresos(df_raw):
     encabezado("Análisis descriptivo ingresos", "Promedio y mediana del ingreso laboral total de las personas ocupadas.")
+    grupo = selector_grupo("ingresos")
     df, activos = panel_filtros(df_raw, "ingresos")
     if df.empty:
         sin_registros()
@@ -1343,7 +1372,7 @@ def pagina_ingresos(df_raw):
         k = int((deptos["mean"] > prom).sum())
         franja(f'<strong>{k} de {len(deptos)}</strong> departamentos superan el ingreso promedio {nac}. '
                f'La diferencia entre el de mayor y el de menor ingreso promedio es de <strong>{fmt_cop(deptos["mean"].iloc[0] - deptos["mean"].iloc[-1])}</strong>.')
-    bloque_graficos(df, "ingresos", "ingresos", prom, med, nac)
+    bloque_graficos(df, "ingresos", "ingresos", prom, med, nac, grupo)
     pie()
 
 
