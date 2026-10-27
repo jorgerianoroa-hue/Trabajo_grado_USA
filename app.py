@@ -215,7 +215,7 @@ div[class*="st-key-sort_"] [data-testid="stButtonGroup"] { background:$FIELD; bo
 div[class*="st-key-sort_"] button { min-height:0; height:36px; padding:0 12px; border:none; border-radius:7px; background:transparent; color:$MUTED2; font-size:13px; }
 div[class*="st-key-sort_"] button[kind="segmented_controlActive"], div[class*="st-key-sort_"] button[data-testid="stBaseButton-segmented_controlActive"], div[class*="st-key-sort_"] button[data-selected="true"], div[class*="st-key-sort_"] button[aria-checked="true"] {
     background:$SURFACE !important; color:$PRIMARY_DARK !important; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.08); }
-.dn-cap { display:flex; flex-direction:column; align-items:center; gap:2px; text-align:center; font-size:12px; color:$MUTED; }
+.dn-cap { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; font-size:12px; color:$MUTED; }
 .dn-cap b { font-size:14px; color:$TEXT; font-weight:600; }
 .dn-cap i { font-style:normal; font-weight:600; } .dn-cap i.up { color:$PRIMARY; } .dn-cap i.down { color:$ACCENT_TEXT; }
 div[class*="st-key-pill_"] { margin-bottom:-.2rem; }
@@ -229,7 +229,49 @@ div[class*="st-key-pill_"] button[kind="segmented_controlActive"], div[class*="s
 div[class*="st-key-pill_"] button[data-selected="true"], div[class*="st-key-pill_"] button[aria-checked="true"] {
     background:$PRIMARY_DARK !important; color:#FFFFFF !important; border-color:$PRIMARY_DARK !important; font-weight:600; }
 div[class*="st-key-pill_"] button p { color:inherit !important; }
+@media (max-width:1500px) { div[class*="st-key-pill_"] button { padding:0 4px; font-size:13.5px; } }
 @media (max-width:900px) { div[class*="st-key-pill_"] [role="radiogroup"] { flex-wrap:wrap !important; } div[class*="st-key-pill_"] button { flex:1 1 28% !important; padding:0 4px !important; font-size:13px; } }
+/* Análisis sin desplazamiento vertical: las tarjetas toman el alto que queda en la pantalla (la lista de cada ranking se desplaza dentro de su tarjeta) */
+@media (min-width:1100px) and (min-height:640px) {
+    :root { --alto: calc(100vh - 348px); }
+    .block-container:has(.st-key-filters) { padding-top:14px; padding-bottom:6px; }
+    .block-container:has(.st-key-filters) [data-testid="stVerticalBlock"] { gap:.5rem; }
+    .block-container:has(.st-key-filters) .page-title { font-size:22px; }
+    .block-container:has(.st-key-filters) .page-sub { display:none; }
+    div[class*="st-key-pill_"] button { height:38px; }
+    .st-key-filters { padding:8px 14px; gap:6px; }
+    .st-key-filters .fh-s { display:none; }
+    .st-key-filters [data-baseweb="select"] > div { min-height:34px; }
+    .kpis { gap:8px; margin-bottom:.5rem; }
+    .kpi { padding:8px 14px; gap:1px; }
+    .kpi-s { display:none; }
+    .kpi-v { font-size:24px; } .kpi-v.sm { font-size:18px; }
+    .insight { padding:7px 14px; margin-bottom:.6rem; font-size:13px; }
+    .fh-t, .fh-s { display:none; } .st-key-filters { position:relative; }
+    .fh { position:absolute; top:-9px; right:16px; background:$SURFACE; padding:0 8px; line-height:1.2; margin:0; z-index:2; } .fh-c { font-size:12px; }
+    .st-key-filters { gap:4px; }
+    div[class*="st-key-helpclose_"], div[class*="st-key-helpbtn_"] { display:none; }
+    div[class*="st-key-card_formalidad_departamento"][class*="st-key-card"], div[class*="st-key-card_ingresos_departamento"][class*="st-key-card"] { height:calc(var(--alto) - 58px) !important; flex-basis:calc(var(--alto) - 58px) !important; }
+    div[class*="st-key-card_formalidad_"], div[class*="st-key-card_ingresos_"], div[class*="st-key-detail_formalidad"], div[class*="st-key-detail_ingresos"] {
+        height:var(--alto); flex:0 0 var(--alto) !important; overflow:hidden; padding:14px 16px; gap:12px; }
+    div[class*="st-key-card_formalidad_"] [data-testid="stElementContainer"]:has(.rk), div[class*="st-key-card_ingresos_"] [data-testid="stElementContainer"]:has(.rk) {
+        flex:1 1 0; min-height:0; overflow-y:auto; }
+    div[class*="st-key-detail_formalidad"], div[class*="st-key-detail_ingresos"] { overflow-y:auto; }
+    div[class*="st-key-card_formalidad_"] [data-testid="stPlotlyChart"], div[class*="st-key-card_ingresos_"] [data-testid="stPlotlyChart"] { height:calc(var(--alto) - 110px) !important; }
+    div[class*="st-key-card_formalidad_sexo"] [data-testid="stPlotlyChart"] { height:calc(var(--alto) - 125px) !important; }
+    div[class*="st-key-card_formalidad_sexo"] .card-sub { display:none; }
+    div[class*="st-key-detail_"] .eyebrow { margin-bottom:4px; }
+    div[class*="st-key-detail_"] [data-testid="stElementContainer"] { flex:0 0 auto; height:auto !important; min-height:max-content; overflow:visible; }
+    div[class*="st-key-detail_"] [data-testid="stElementContainer"]:has(.d-grid){ margin-bottom:6px; }
+    div[class*="st-key-card_formalidad_"] .js-plotly-plot, div[class*="st-key-card_ingresos_"] .js-plotly-plot { height:100% !important; }
+    .foot { margin-top:.3rem; padding-top:.3rem; font-size:11px; }
+    .help-card { display:none; }
+}
+.rk-sm .rk-ax .scale { display:none; }
+.rk-sm .rk-ax, .rk-sm .rk-row { grid-template-columns:20px minmax(70px, 118px) minmax(0, 1fr) 62px; gap:8px; }
+.rk-sm.rk-ti .rk-ax, .rk-sm.rk-ti .rk-row { grid-template-columns:20px minmax(70px, 118px) minmax(0, 1fr) 84px; }
+.rk-sm.rk-ti .rk-ax > :last-child, .rk-sm.rk-ti .rk-row > :last-child { display:none; }
+.rk-sm .rk-f, .rk-sm .rk-nf { font-size:10px; padding-right:4px; }
 .mp-l { font-size:12px; color:$MUTED; margin:0 0 6px; letter-spacing:.04em; text-transform:uppercase; }
 .mp-r { display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-top:1px solid $HAIRLINE; font-size:13px; color:$TEXT; }
 .mp-r b { font-weight:600; white-space:nowrap; }
@@ -631,7 +673,7 @@ PLOT_CONFIG = {"displayModeBar": False}
 
 def estilizar_figura(fig, altura, pct):
     fig.update_layout(**PLOTLY_LAYOUT)
-    fig.update_layout(height=altura, margin=dict(t=18, b=8, l=4, r=44))
+    fig.update_layout(height=altura if altura else None, autosize=True, margin=dict(t=18, b=8, l=4, r=44))
     fig.update_yaxes(showgrid=True, gridcolor=TRACK, zeroline=False, showline=False, tickfont=dict(size=11),
                      tickformat=".0%" if pct else ",.0f", tickprefix="" if pct else "$",
                      range=[0, 1] if pct else None, rangemode=None if pct else "tozero")
@@ -654,7 +696,7 @@ def grafico_tendencia(d, dim, series, pct, key=None):
             line=dict(color=color, width=2), marker=dict(size=6, color=color),
             hovertemplate=f"<b>%{{x}}</b><br>{nombre}: {pre}%{{y:{fmt}}}<extra></extra>",
         )
-    estilizar_figura(fig, 300, pct)
+    estilizar_figura(fig, None, pct)
     st.plotly_chart(fig, config=PLOT_CONFIG, key=key)
 
 
@@ -678,10 +720,9 @@ GRUPOS = [
     ("Departamento", [[("departamento", "por departamento", {})]]),
     ("Tiempo", [[("anio", "por año", {"tendencia": True}), ("Mes Letras", "por mes", {"tendencia": True})]]),
     ("Educación", [[("nivel_educativo", "por nivel educativo", {})]]),
-    ("Demografía", [[("sexo", "por sexo", {}), ("estado_civil", "por estado civil", {})],
-                    [("etnia", "por etnia", {"ancho": True})]]),
-    ("Contrato", [[("tipo_contrato", "por tipo de contrato", {}), ("posicion_ocupacional", "por posición ocupacional", {})],
-                  [("lugar_trabajo", "por lugar de trabajo", {"ancho": True})]]),
+    ("Demografía", [[("sexo", "por sexo", {}), ("estado_civil", "por estado civil", {}), ("etnia", "por etnia", {})]]),
+    ("Contrato", [[("tipo_contrato", "por tipo de contrato", {}), ("posicion_ocupacional", "por posición ocupacional", {}),
+                   ("lugar_trabajo", "por lugar de trabajo", {})]]),
     ("Sector", [[("sector_economico_seccion", "por sector económico", {})]]),
     ("Oficio", [[("oficio_gran_grupo", "por oficio", {})]]),
 ]
@@ -736,15 +777,15 @@ def filas_ranking(v, dim, tipo, ref, xmax, sel):
     return "".join(filas)
 
 
-def ranking_card(d, dim, titulo, tipo, ref, base, nac, completo):
+def ranking_card(d, dim, titulo, tipo, ref, base, nac, completo, estrecho=False):
     sing, plur = NOMBRES[dim]
     total = len(d)
     exp_key, sel = f"{base}_exp", st.session_state.get(f"{base}_sel")
     with st.container(key=f"card_{base}"):
         if tipo == "formalidad":
-            leyenda = (f'<span><i class="lg-sq" style="background:{PRIMARY}"></i>Trabajo formal</span>'
-                       f'<span><i class="lg-sq" style="background:{NOFORMAL}"></i>Trabajo no formal</span>'
-                       f'<span><i class="lg-line"></i>Promedio {nac} ({fmt_pct(ref)})</span>')
+            leyenda = (f'<span><i class="lg-sq" style="background:{PRIMARY}"></i>{"Formal" if estrecho else "Trabajo formal"}</span>'
+                       f'<span><i class="lg-sq" style="background:{NOFORMAL}"></i>{"No formal" if estrecho else "Trabajo no formal"}</span>'
+                       f'<span><i class="lg-line"></i>{"Prom. nac." if estrecho else "Promedio " + nac} ({fmt_pct(ref)})</span>')
         else:
             leyenda = (f'<span><i class="lg-sq" style="background:{PRIMARY}"></i>Promedio</span>'
                        f'<span><i class="dia"></i>Mediana</span>')
@@ -770,10 +811,9 @@ def ranking_card(d, dim, titulo, tipo, ref, base, nac, completo):
         if q:
             v = v[v[dim].map(norm).str.contains(norm(q), regex=False)]
         expandido = st.session_state.get(exp_key, False)
-        visibles = v if (q or expandido) else v.head(10)
+        visibles = v          # se muestran todas las filas; la lista se desplaza dentro de la tarjeta
 
-        sub = (f"{len(v)} resultado{'' if len(v) == 1 else 's'} para “{q}”" if q else
-               f"Mostrando {len(visibles)} de {total} {plur}" if total > 10 else f"{total} {plur}")
+        sub = f"{len(v)} resultado{'' if len(v) == 1 else 's'} para “{q}”" if q else f"{total} {plur}"
         with cab:
             html(f'<div class="card-head"><div><div class="card-title">{MEDIDAS[tipo]["nombre"]} {titulo}</div>'
                  f'<div class="card-sub">{sub}</div></div><div class="legend">{leyenda}</div></div>')
@@ -788,15 +828,9 @@ def ranking_card(d, dim, titulo, tipo, ref, base, nac, completo):
                 xmax = float(d[["mean", "median"]].max().max()) or 1.0
                 escala = "".join(f"<span>{fmt_corto(xmax * p)}</span>" for p in (0, .5, 1))
                 cols_ax = '<span class="r">Promedio</span><span class="r">vs. promedio</span>'
-            html(f'<div class="rk{" rk-ti" if tipo == "ingresos" else ""}">'
+            html(f'<div class="rk{" rk-ti" if tipo == "ingresos" else ""}{" rk-sm" if estrecho else ""}">'
                  f'<div class="rk-ax"><span>#</span><span>{sing.capitalize()}</span><span class="scale">{escala}</span>{cols_ax}</div>'
                  f'{filas_ranking(visibles, dim, tipo, ref, xmax, sel)}</div>')
-
-        if total > 10 and not q and completo:
-            etiqueta = "Mostrar solo los primeros 10" if expandido else f"Ver los {total} {plur} (+{total - 10})"
-            with st.container(key=f"tg_{base}"):
-                st.button(etiqueta, key=f"tgb_{base}", icon=":material/remove:" if expandido else ":material/add:",
-                          on_click=lambda k=exp_key: st.session_state.update({k: not st.session_state.get(k, False)}))
 
 
 def sexo_card(d, tipo, ref, base, nac):
@@ -814,22 +848,26 @@ def sexo_card(d, tipo, ref, base, nac):
         html(f'<div class="card-head"><div><div class="card-title">{MEDIDAS[tipo]["nombre"]} por sexo</div>'
              f'<div class="card-sub">{sub}</div></div><div class="legend">{leyenda}</div></div>')
         if tipo == "formalidad":
-            cols = st.columns(len(orden))
-            for col, sx in zip(cols, orden):
+            fig = go.Figure()
+            anot = []
+            for i, sx in enumerate(orden):
                 m, n = float(d.loc[sx, "mean"]), int(d.loc[sx, "n"])
-                fig = go.Figure(go.Pie(
-                    values=[m, 1 - m], labels=["Trabajo formal", "Trabajo no formal"], hole=.7, sort=False, direction="clockwise", rotation=0,
-                    marker=dict(colors=[PRIMARY, NOFORMAL], line=dict(color=SURFACE, width=3)), textinfo="none",
-                    hovertemplate="%{label}: %{percent:.1%}<extra></extra>"))
-                fig.update_layout(**PLOTLY_LAYOUT)
-                fig.update_layout(height=230, margin=dict(t=6, b=6, l=6, r=6), annotations=[
-                    dict(text=f"<b>{fmt_pct(m)}</b>", x=.5, y=.54, showarrow=False, font=dict(size=26, color=PRIMARY, family=F_BODY)),
-                    dict(text="formal", x=.5, y=.40, showarrow=False, font=dict(size=12, color=MUTED, family=F_BODY))])
-                with col:
-                    st.plotly_chart(fig, config=PLOT_CONFIG, key=f"ch_{base}_{sx}")
-                    dif = m - ref
-                    html(f'<div class="dn-cap"><b>{escape(sx)}</b><span>{fmt_pct(1 - m)} no formal · <i class="{"up" if dif >= 0 else "down"}">{fmt_pp(dif)}</i> vs. promedio {nac}</span>'
-                         f'<span>{fmt_n(n)} registros</span></div>')
+                y0, y1 = (0.53, 1.0) if i == 0 else (0.0, 0.47)
+                fig.add_trace(go.Pie(
+                    values=[m, 1 - m], labels=["Trabajo formal", "Trabajo no formal"], hole=.72, sort=False, direction="clockwise",
+                    domain=dict(x=[0, .46], y=[y0, y1]), marker=dict(colors=[PRIMARY, NOFORMAL], line=dict(color=SURFACE, width=3)),
+                    textinfo="none", hovertemplate=f"{sx} · %{{label}}: %{{percent:.1%}}<extra></extra>"))
+                yc = (y0 + y1) / 2
+                dif = m - ref
+                anot += [
+                    dict(text=f"<b>{fmt_pct(m)}</b>", x=.23, y=yc, showarrow=False, font=dict(size=16, color=PRIMARY, family=F_BODY)),
+                    dict(text=f"<b>{sx}</b><br><span style='color:{MUTED}'>{fmt_pct(1 - m)} no formal</span><br>"
+                              f"<span style='color:{PRIMARY if dif >= 0 else ACCENT_TEXT}'>{fmt_pp(dif)} vs. promedio</span><br>"
+                              f"<span style='color:{MUTED}'>{fmt_n(n)} registros</span>",
+                         x=.52, y=yc, xanchor="left", yanchor="middle", align="left", showarrow=False, font=dict(size=13, color=TEXT, family=F_BODY))]
+            fig.update_layout(**PLOTLY_LAYOUT)
+            fig.update_layout(height=None, autosize=True, margin=dict(t=4, b=4, l=4, r=4), annotations=anot)
+            st.plotly_chart(fig, config=PLOT_CONFIG, key=f"ch_{base}")
         else:
             fig = go.Figure()
             fig.add_trace(go.Bar(x=orden, y=[d.loc[x, "mean"] for x in orden], name="Promedio", marker_color=PRIMARY, width=.28,
@@ -838,7 +876,7 @@ def sexo_card(d, tipo, ref, base, nac):
             fig.add_trace(go.Bar(x=orden, y=[d.loc[x, "median"] for x in orden], name="Mediana", marker_color=ACCENT, width=.28,
                                  text=[fmt_corto(d.loc[x, "median"]) for x in orden], textposition="outside", cliponaxis=False,
                                  hovertemplate="%{x}<br>Mediana: $%{y:,.0f}<extra></extra>"))
-            estilizar_figura(fig, 290, False)
+            estilizar_figura(fig, None, False)
             fig.update_layout(barmode="group", bargap=.35, margin=dict(t=26, b=8, l=4, r=4))
             fig.update_yaxes(showticklabels=False, showgrid=False)
             st.plotly_chart(fig, config=PLOT_CONFIG, key=f"ch_{base}")
@@ -922,7 +960,7 @@ def mapa_card(d, tipo, ref, base, nac):
                       tickfont=dict(size=11, color=MUTED), title=None, nticks=5)))
     fig.update_maps(style="white-bg", center=dict(lat=4.8, lon=-74.0), zoom=4.35, bounds=dict(west=-86, east=-60, south=-8, north=17))
     fig.update_layout(**PLOTLY_LAYOUT)
-    fig.update_layout(height=500, margin=dict(t=4, b=4, l=0, r=0),
+    fig.update_layout(height=None, autosize=True, margin=dict(t=4, b=4, l=0, r=0),
                       hoverlabel=dict(bgcolor=SURFACE, bordercolor=BORDER, font=dict(family=F_BODY, size=12, color=TEXT), align="left"))
     with st.container(key=f"card_{base}_mapa"):
         leyenda = ('<span>Más formalidad = tono más oscuro</span>' if pct else '<span>Más ingreso promedio = tono más oscuro</span>')
@@ -1054,9 +1092,9 @@ def bloque_graficos(df, tipo, pagina, ref, ref2, nac, grupo=None):
                             if vista == "Mapa":
                                 mapa_card(d, tipo, ref, base, nac)
                             else:
-                                ranking_card(d, dim, tit, tipo, ref, base, nac, solo or bool(ancho))
+                                ranking_card(d, dim, tit, tipo, ref, base, nac, solo or bool(ancho), estrecho=len(fila) >= 3)
                         else:
-                            ranking_card(d, dim, tit, tipo, ref, base, nac, solo or bool(ancho))
+                            ranking_card(d, dim, tit, tipo, ref, base, nac, solo or bool(ancho), estrecho=len(fila) >= 3)
                 if solo and not fila[0][2].get("tendencia"):
                     with cols[1]:
                         base = f"{pagina}_{fila[0][0]}"
@@ -1130,7 +1168,7 @@ def panel_filtros(df_raw, clave):
              f'<span class="fh-c"><strong>{fmt_n(len(df))}</strong> de {fmt_n(len(df_raw))} registros</span></div>')
         for col, (c, etiqueta) in zip(st.columns(len(FILTROS), gap="small"), FILTROS):
             opciones = MESES_ORDEN if c == "Mes Letras" else opciones_filtro(c)
-            col.multiselect(etiqueta, opciones, placeholder="Todos", key=claves[c])
+            col.multiselect(etiqueta, opciones, placeholder=f"{etiqueta}: todos", key=claves[c], label_visibility="collapsed")
         activos = [(c, e, st.session_state.get(claves[c])) for c, e in FILTROS if st.session_state.get(claves[c])]
         if activos:
             anchos = [0.9] + [1.7] * len(activos) + [1.0, max(0.4, 8 - 1.7 * len(activos))]
@@ -1317,8 +1355,11 @@ def pagina_inicio(df_raw=None):
 
 
 def pagina_formalidad(df_raw):
-    encabezado("Análisis descriptivo formalidad", "Proporción de personas ocupadas con empleo formal y no formal en Colombia.")
-    grupo = selector_grupo("formalidad")
+    ch1, ch2 = st.columns([0.85, 2.15], vertical_alignment="center", gap="medium")
+    with ch1:
+        encabezado("Análisis descriptivo formalidad", "Proporción de personas ocupadas con empleo formal y no formal en Colombia.")
+    with ch2:
+        grupo = selector_grupo("formalidad")
     df, activos = panel_filtros(df_raw, "formalidad")
     if df.empty:
         sin_registros()
@@ -1348,8 +1389,11 @@ def pagina_formalidad(df_raw):
 
 
 def pagina_ingresos(df_raw):
-    encabezado("Análisis descriptivo ingresos", "Promedio y mediana del ingreso laboral total de las personas ocupadas.")
-    grupo = selector_grupo("ingresos")
+    ch1, ch2 = st.columns([0.85, 2.15], vertical_alignment="center", gap="medium")
+    with ch1:
+        encabezado("Análisis descriptivo ingresos", "Promedio y mediana del ingreso laboral total de las personas ocupadas.")
+    with ch2:
+        grupo = selector_grupo("ingresos")
     df, activos = panel_filtros(df_raw, "ingresos")
     if df.empty:
         sin_registros()
