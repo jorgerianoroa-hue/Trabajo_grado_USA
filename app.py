@@ -153,7 +153,7 @@ footer { visibility:hidden; }
 }
 
 /* Encabezado de página */
-.page-title { font-size:28px; font-weight:600; letter-spacing:-0.01em; line-height:1.2; }
+.page-title { font-size:clamp(16px, 1.5vw, 24px); white-space:nowrap; font-weight:600; letter-spacing:-0.01em; line-height:1.2; }
 .page-sub { color:$MUTED; font-size:15px; margin-top:6px; margin-bottom:10px; }
 
 /* Panel de filtros */
@@ -202,7 +202,7 @@ div[class*="st-key-chip_"] button:hover { background:#DCEAE6; color:$PRIMARY_DAR
 /* Tarjetas de gráfico y de detalle */
 div[class*="st-key-card_"], div[class*="st-key-detail_"] { background:$SURFACE; border:1px solid $BORDER; border-radius:12px; padding:20px; gap:16px; }
 .card-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px; }
-.card-title { font-size:17px; font-weight:600; }
+.card-title { font-size:15px; overflow-wrap:anywhere; font-weight:600; }
 .card-sub { font-size:13px; color:$MUTED; margin-top:4px; }
 .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:13px; color:$MUTED2; align-items:center; }
 .legend span { display:flex; align-items:center; gap:6px; }
@@ -220,16 +220,16 @@ div[class*="st-key-sort_"] button[kind="segmented_controlActive"], div[class*="s
 .dn-cap i { font-style:normal; font-weight:600; } .dn-cap i.up { color:$PRIMARY; } .dn-cap i.down { color:$ACCENT_TEXT; }
 div[class*="st-key-pill_"] { margin-bottom:-.2rem; }
 div[class*="st-key-pill_"] [data-testid="stButtonGroup"], div[class*="st-key-pill_"] [data-testid="stElementContainer"] { width:100% !important; }
-div[class*="st-key-pill_"] [role="radiogroup"] { display:flex; flex-wrap:nowrap; gap:8px; width:100% !important; max-width:none !important; }
+div[class*="st-key-pill_"] [role="radiogroup"] { display:flex; flex-wrap:nowrap; gap:6px; width:100% !important; max-width:none !important; }
 
-div[class*="st-key-pill_"] button { flex:1 1 0; min-width:0; white-space:nowrap; height:42px; min-height:0; padding:0 14px; border:1px solid $BORDER; border-radius:10px;
+div[class*="st-key-pill_"] button { flex:1 1 auto; min-width:max-content; white-space:nowrap; height:40px; min-height:0; padding:0 10px; border:1px solid $BORDER; border-radius:10px;
     background:$SURFACE; color:$MUTED2; font-size:14px; font-weight:500; transition:background .15s, color .15s, border-color .15s; }
 div[class*="st-key-pill_"] button:hover { background:$FIELD; color:$TEXT; }
 div[class*="st-key-pill_"] button[kind="segmented_controlActive"], div[class*="st-key-pill_"] button[data-testid="stBaseButton-segmented_controlActive"],
 div[class*="st-key-pill_"] button[data-selected="true"], div[class*="st-key-pill_"] button[aria-checked="true"] {
     background:$PRIMARY_DARK !important; color:#FFFFFF !important; border-color:$PRIMARY_DARK !important; font-weight:600; }
 div[class*="st-key-pill_"] button p { color:inherit !important; }
-@media (max-width:1500px) { div[class*="st-key-pill_"] button { padding:0 4px; font-size:13.5px; } }
+@media (max-width:1500px) { div[class*="st-key-pill_"] button { padding:0 8px; font-size:13px; } .page-title { font-size:clamp(16px, 1.4vw, 21px); } }
 @media (max-width:900px) { div[class*="st-key-pill_"] [role="radiogroup"] { flex-wrap:wrap !important; } div[class*="st-key-pill_"] button { flex:1 1 28% !important; padding:0 4px !important; font-size:13px; } }
 /* Análisis sin desplazamiento vertical: las tarjetas toman el alto que queda en la pantalla (la lista de cada ranking se desplaza dentro de su tarjeta) */
 @media (min-width:1100px) and (min-height:640px) {
@@ -261,6 +261,9 @@ div[class*="st-key-pill_"] button p { color:inherit !important; }
     div[class*="st-key-card_formalidad_sexo"] [data-testid="stPlotlyChart"] { height:calc(var(--alto) - 125px) !important; }
     div[class*="st-key-card_formalidad_sexo"] .card-sub { display:none; }
     div[class*="st-key-detail_"] .eyebrow { margin-bottom:4px; }
+    div[class*="st-key-card_"] [data-testid="stElementContainer"]:has(.card-head) { flex:0 0 auto !important; height:auto !important; min-height:max-content; overflow:visible; }
+    div[class*="st-key-card_"] .card-head { row-gap:6px; }
+    .card-head.ch-sm .card-sub { display:none; } .card-head.ch-sm { padding-bottom:22px; }
     div[class*="st-key-detail_"] [data-testid="stElementContainer"] { flex:0 0 auto; height:auto !important; min-height:max-content; overflow:visible; }
     div[class*="st-key-detail_"] [data-testid="stElementContainer"]:has(.d-grid){ margin-bottom:6px; }
     div[class*="st-key-card_formalidad_"] .js-plotly-plot, div[class*="st-key-card_ingresos_"] .js-plotly-plot { height:100% !important; }
@@ -815,7 +818,7 @@ def ranking_card(d, dim, titulo, tipo, ref, base, nac, completo, estrecho=False)
 
         sub = f"{len(v)} resultado{'' if len(v) == 1 else 's'} para “{q}”" if q else f"{total} {plur}"
         with cab:
-            html(f'<div class="card-head"><div><div class="card-title">{MEDIDAS[tipo]["nombre"]} {titulo}</div>'
+            html(f'<div class="card-head{" ch-sm" if estrecho else ""}"><div><div class="card-title">{MEDIDAS[tipo]["nombre"]} {titulo}</div>'
                  f'<div class="card-sub">{sub}</div></div><div class="legend">{leyenda}</div></div>')
 
         if visibles.empty:
@@ -1355,7 +1358,7 @@ def pagina_inicio(df_raw=None):
 
 
 def pagina_formalidad(df_raw):
-    ch1, ch2 = st.columns([0.85, 2.15], vertical_alignment="center", gap="medium")
+    ch1, ch2 = st.columns([0.9, 2.1], vertical_alignment="center", gap="small")
     with ch1:
         encabezado("Análisis descriptivo formalidad", "Proporción de personas ocupadas con empleo formal y no formal en Colombia.")
     with ch2:
@@ -1389,7 +1392,7 @@ def pagina_formalidad(df_raw):
 
 
 def pagina_ingresos(df_raw):
-    ch1, ch2 = st.columns([0.85, 2.15], vertical_alignment="center", gap="medium")
+    ch1, ch2 = st.columns([0.9, 2.1], vertical_alignment="center", gap="small")
     with ch1:
         encabezado("Análisis descriptivo ingresos", "Promedio y mediana del ingreso laboral total de las personas ocupadas.")
     with ch2:
