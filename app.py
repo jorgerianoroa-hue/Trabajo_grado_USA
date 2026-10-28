@@ -1336,9 +1336,9 @@ def _pedir(base, modelo, clave, sistema, mensajes, max_tokens, temperatura):
     """Una llamada a una API compatible con OpenAI. Reintenta ante saturación (503/429). Devuelve (texto, error)."""
     import urllib.error
     import urllib.request
-    cuerpo = {"model": modelo, "temperature": temperatura, "max_tokens": max(max_tokens, 1500),
+    cuerpo = {"model": modelo, "temperature": temperatura, "max_tokens": 900,
               "messages": [{"role": "system", "content": sistema}] + mensajes}
-    if modelo.startswith("openai/gpt-oss"):
+    if modelo.startswith("openai/gpt-oss") or "gemini" in modelo:
         cuerpo["reasoning_effort"] = "low"
     datos = json.dumps(cuerpo).encode("utf-8")
     err = ""
@@ -1376,6 +1376,8 @@ def llamar_ia(sistema, mensajes, max_tokens=600, temperatura=0.3):
         intentos.append((_secreto("IA_BASE_URL", "https://api.groq.com/openai/v1"), _secreto("IA_MODEL", "openai/gpt-oss-120b"), _secreto("IA_API_KEY")))
     if _secreto("GROQ_API_KEY"):
         intentos.append(("https://api.groq.com/openai/v1", "openai/gpt-oss-120b", _secreto("GROQ_API_KEY")))
+    if len(intentos) == 2 and str(_secreto("IA_PRIMERO", "")).lower() == "groq":
+        intentos.reverse()
     errores = []
     for base, modelo, clave in intentos:
         texto, err = _pedir(base, modelo, clave, sistema, mensajes, max_tokens, temperatura)
