@@ -1354,9 +1354,14 @@ def llamar_ia(sistema, mensajes, max_tokens=600, temperatura=0.3):
             return json.loads(r.read().decode("utf-8"))["choices"][0]["message"]["content"].strip()
     except urllib.error.HTTPError as e:
         try:
-            det = json.loads(e.read().decode("utf-8")).get("error", {}).get("message", "")
+            bruto = e.read().decode("utf-8", "replace")
+            j = json.loads(bruto)
+            j = j[0] if isinstance(j, list) and j else j
+            det = (j.get("error", {}) or {}).get("message", "") if isinstance(j, dict) else ""
+            det = det or bruto[:200]
         except Exception:
             det = ""
+        det = f"{det} [{base} · {modelo}]"
         st.session_state["ia_error"] = f"HTTP {e.code}: {det}"[:300]
         return None
     except Exception as e:
