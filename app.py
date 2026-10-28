@@ -226,6 +226,9 @@ div[class*="st-key-pill_"] .react-aria-ComboBox [role="group"] { background:$SUR
 div[class*="st-key-pill_"] .react-aria-ComboBox input { font-weight:600; color:$PRIMARY_DARK !important; -webkit-text-fill-color:$PRIMARY_DARK; }
 div[class*="st-key-pill_"] .react-aria-ComboBox button { background:transparent !important; color:$PRIMARY_DARK; }
 .gq { line-height:38px; }
+div[class*="st-key-pill_"] [data-testid="stElementContainer"] { flex:0 0 auto !important; width:auto !important; }
+div[class*="st-key-pill_"] [data-testid="stElementContainer"]:has([data-testid="stSelectbox"]) { width:270px !important; }
+div[class*="st-key-pill_"] [data-testid="stVerticalBlock"] { flex-direction:row !important; align-items:center; justify-content:flex-end; gap:14px; width:100%; }
 @media (max-width:900px) { div[class*="st-key-pill_"] { flex-wrap:wrap; justify-content:flex-start; } div[class*="st-key-pill_"] [data-testid="stSelectbox"] { width:100%; flex:1 1 100%; } }
 
 /* Análisis sin desplazamiento vertical: las tarjetas toman el alto que queda en la pantalla (la lista de cada ranking se desplaza dentro de su tarjeta) */
