@@ -1335,6 +1335,7 @@ def ia_configurada():
 def llamar_ia(sistema, mensajes, max_tokens=600, temperatura=0.3):
     """Cliente de IA gratuita compatible con la API de OpenAI (por defecto Groq con Llama 3.3 70B).
     Para cambiar de proveedor basta con definir IA_BASE_URL, IA_MODEL e IA_API_KEY (Gemini, OpenRouter, etc.). Devuelve texto o None."""
+    import urllib.error
     import urllib.request
     clave = _secreto("IA_API_KEY") or _secreto("GROQ_API_KEY")
     if not clave:
@@ -1348,7 +1349,15 @@ def llamar_ia(sistema, mensajes, max_tokens=600, temperatura=0.3):
     try:
         with urllib.request.urlopen(req, timeout=40) as r:
             return json.loads(r.read().decode("utf-8"))["choices"][0]["message"]["content"].strip()
-    except Exception:
+    except urllib.error.HTTPError as e:
+        try:
+            det = json.loads(e.read().decode("utf-8")).get("error", {}).get("message", "")
+        except Exception:
+            det = ""
+        st.session_state["ia_error"] = f"HTTP {e.code}: {det}"[:300]
+        return None
+    except Exception as e:
+        st.session_state["ia_error"] = f"{type(e).__name__}: {e}"[:300]
         return None
 
 
@@ -1384,7 +1393,7 @@ def responder(pregunta, pagina):
         r = llamar_ia(sistema_ia(pagina), hist + [{"role": "user", "content": pregunta}])
         if r:
             return r
-        return "No pude conectarme con el asistente en este momento. Inténtalo de nuevo en unos segundos."
+        return "No pude conectarme con el asistente (" + st.session_state.get("ia_error", "sin detalle") + "). Inténtalo de nuevo en unos segundos."
     return ("El asistente todavía no está conectado a una IA. Cuando se configure la clave, podré ayudarte "
             "a interpretar los datos de esta sección.")
 
