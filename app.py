@@ -394,9 +394,16 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 .mv-tabs span { font-size:13px; font-weight:500; color:$MUTED; padding:6px 14px; border-radius:999px; background:$TRACK; }
 .mv-tabs span.on { background:$PRIMARY; color:#FFFFFF; }
 .pf-g { font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:$MUTED; margin:16px 0 2px; }
-.sv-q { font-size:17px; font-weight:600; margin-top:14px; animation:svEntra .4s ease both; }
+.sv-q { font-size:17px; font-weight:600; margin-top:0; line-height:1.3; animation:svEntra .4s ease both; }
 @keyframes svEntra { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
-.sv-h { font-size:13px; color:$MUTED; margin-top:2px; }
+.sv-h { font-size:13px; color:$MUTED; margin-top:2px; line-height:1.4; }
+.sv-q + .sv-h { padding-bottom:10px; }
+div[class*="st-key-sv_split"] [data-testid="stColumn"]:last-child { padding-top:4px; }
+div[class*="st-key-sv_split"] [data-testid="stColumn"]:last-child [data-testid="stElementContainer"]:has(.sv-q) { margin-top:10px; }
+div[class*="st-key-sv_split"] [data-testid="stColumn"]:last-child [data-testid="stElementContainer"]:has(.sv-q):first-child { margin-top:0; }
+div[class*="st-key-sv_split"] [data-testid="stColumn"]:last-child [data-testid="stElementContainer"]:has(.sv-q) + [data-testid="stElementContainer"] { margin-top:2px; }
+div[class*="st-key-sv_split"] [data-testid="stColumn"]:first-child [data-testid="stVerticalBlock"] { gap:.7rem; }
+div[class*="st-key-sv_split"] [data-testid="stColumn"]:first-child button { padding-left:0; }
 .sv-msg { border-radius:8px; padding:10px 14px; font-size:13px; line-height:1.5; margin-top:6px; }
 .sv-msg.advertencia { background:#FFF7EE; border:1px solid #F3DCC2; color:#4A2F14; }
 .sv-msg.bloqueo { background:#FBEAE5; border:1px solid #E8B9AA; color:#7A2410; }
