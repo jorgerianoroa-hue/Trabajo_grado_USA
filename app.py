@@ -7,6 +7,7 @@ import base64
 import hashlib
 import io
 import json
+import math
 import os
 import re
 import time
@@ -268,7 +269,7 @@ div[class*="st-key-pill_"] button p { color:inherit !important; }
     div[class*="st-key-detail_"] [data-testid="stElementContainer"] { flex:0 0 auto; height:auto !important; min-height:max-content; overflow:visible; }
     div[class*="st-key-detail_"] [data-testid="stElementContainer"]:has(.d-grid){ margin-bottom:6px; }
     div[class*="st-key-card_formalidad_"] .js-plotly-plot, div[class*="st-key-card_ingresos_"] .js-plotly-plot { height:100% !important; }
-    div[class*="st-key-mapa"] [data-testid="stPlotlyChart"] { height:auto !important; }
+    div[class*="st-key-mapav"] [data-testid="stPlotlyChart"] { height:auto !important; }
     .foot { margin-top:.3rem; padding-top:.3rem; font-size:11px; }
     .help-card { display:none; }
 }
@@ -277,9 +278,7 @@ div[class*="st-key-pill_"] button p { color:inherit !important; }
 .rk-sm.rk-ti .rk-ax, .rk-sm.rk-ti .rk-row { grid-template-columns:20px minmax(70px, 118px) minmax(0, 1fr) 84px; }
 .rk-sm.rk-ti .rk-ax > :last-child, .rk-sm.rk-ti .rk-row > :last-child { display:none; }
 .rk-sm .rk-f, .rk-sm .rk-nf { font-size:10px; padding-right:4px; }
-div[class*="st-key-mapag_"], div[class*="st-key-mapam_"] { display:none !important; }
-@media (min-height:840px) { div[class*="st-key-mapam_"] { display:block !important; } div[class*="st-key-mapas_"] { display:none !important; } }
-@media (min-height:1000px) { div[class*="st-key-mapag_"] { display:block !important; } div[class*="st-key-mapam_"] { display:none !important; } }
+/*MAPA_CSS*/
 .mp-l { font-size:12px; color:$MUTED; margin:0 0 6px; letter-spacing:.04em; text-transform:uppercase; }
 .mp-r { display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-top:1px solid $HAIRLINE; font-size:13px; color:$TEXT; }
 .mp-r b { font-weight:600; white-space:nowrap; }
@@ -611,7 +610,7 @@ TOKENS = dict(
 
 def inject_css():
     """CSS común (ligero). El CSS de la portada, con los mapas e ilustraciones, solo se envía en la portada."""
-    st.markdown(CSS.safe_substitute(TOKENS), unsafe_allow_html=True)
+    st.markdown(CSS.safe_substitute(TOKENS).replace("/*MAPA_CSS*/", css_mapa()), unsafe_allow_html=True)
 
 
 def inject_css_portada():
@@ -986,6 +985,22 @@ def al_elegir_en_mapa(clave_grafico, base):
     st.session_state[f"{base}_sel"] = nuevo
 
 
+# Mapa de Colombia: una versión por rango de altura de ventana (alto de la ventana -> alto del lienzo y zoom que lo muestra completo).
+_ALTOS_VENTANA = [640, 710, 780, 850, 920, 990, 1060, 1130, 1200]
+MAPA_VARIANTES = [("d", 360, 3.8)] + [(str(i), b - 425, round(math.log2(0.97 * (b - 425 - 14) / 24.0), 2)) for i, b in enumerate(_ALTOS_VENTANA)]
+
+
+def css_mapa():
+    env = lambda k: f'div[data-testid="stLayoutWrapper"]:has(> div[class*="st-key-mapav{k}_"])'
+    reglas = ['div[data-testid="stLayoutWrapper"]:has(> div[class*="st-key-mapav"]) { display:none !important; }',
+              f'@media (max-width:1099px), (max-height:639px) {{ {env("d")} {{ display:block !important; }} }}']
+    for i, b in enumerate(_ALTOS_VENTANA):
+        tope = f" and (max-height:{_ALTOS_VENTANA[i + 1] - 1}px)" if i + 1 < len(_ALTOS_VENTANA) else ""
+        reglas.append(f'@media (min-width:1100px) and (min-height:{b}px){tope} {{ {env(i)} {{ display:block !important; }} }}')
+    reglas.append('[data-testid="stMain"] [data-testid="stElementContainer"]:has(> [data-testid="stIFrame"]) { position:absolute; width:0; height:0; overflow:hidden; margin:0; }')
+    return "\n".join(reglas)
+
+
 def mapa_card(d, tipo, ref, base, nac):
     sel = st.session_state.get(f"{base}_sel")
     nombres = d["departamento"].tolist()
@@ -1013,9 +1028,9 @@ def mapa_card(d, tipo, ref, base, nac):
         selectedpoints=[nombres.index(sel)] if sel in nombres else None,
         selected=dict(marker=dict(opacity=1)), unselected=dict(marker=dict(opacity=.55 if sel in nombres else 1)),
         text=textos, hovertemplate="%{text}<extra></extra>",
-        colorbar=dict(orientation="h", thickness=8, len=.55, x=.5, y=-.02, yanchor="top", outlinewidth=0, tickformat=fmt_cb,
+        colorbar=dict(orientation="h", thickness=8, lenmode="pixels", len=230, x=.02, xanchor="left", y=.03, yanchor="bottom", outlinewidth=0, tickformat=fmt_cb,
                       tickfont=dict(size=11, color=MUTED), title=None, nticks=5)))
-    fig.update_maps(style="white-bg", center=dict(lat=4.6, lon=-74.0), zoom=4.0, bounds=dict(west=-86, east=-60, south=-8, north=17))
+    fig.update_maps(style="white-bg", center=dict(lat=4.2, lon=-74.0), zoom=4.0)
     fig.update_layout(**PLOTLY_LAYOUT)
     fig.update_layout(height=None, autosize=True, margin=dict(t=4, b=4, l=0, r=0),
                       hoverlabel=dict(bgcolor=SURFACE, bordercolor=BORDER, font=dict(family=F_BODY, size=12, color=TEXT), align="left"))
@@ -1027,11 +1042,11 @@ def mapa_card(d, tipo, ref, base, nac):
         clave = f"{base}_map_{sel}"
         cm, cl = st.columns([3.3, 1], gap="medium")
         with cm:
-            for sufijo, alto_px, zoom in (("s", 318, 3.7), ("m", 470, 4.15), ("g", 650, 4.65)):   # el CSS muestra el que cabe en la altura de la pantalla
+            for sufijo, alto_px, zoom in MAPA_VARIANTES:   # el CSS muestra solo la versión que cabe completa en la altura de la ventana
                 f = go.Figure(fig)
-                f.update_maps(zoom=zoom, center=dict(lat=4.6, lon=-74.0))
-                f.update_layout(height=alto_px, autosize=True)
-                with st.container(key=f"mapa{sufijo}_{base}"):
+                f.update_maps(zoom=zoom, center=dict(lat=4.2, lon=-74.0))
+                f.update_layout(height=alto_px, autosize=True, dragmode=False)
+                with st.container(key=f"mapav{sufijo}_{base}"):
                     c2 = f"{clave}_{sufijo}"
                     st.plotly_chart(f, config={"displayModeBar": False, "scrollZoom": False}, key=c2, selection_mode="points",
                                     on_select=lambda c=c2, b=base: al_elegir_en_mapa(c, b))
