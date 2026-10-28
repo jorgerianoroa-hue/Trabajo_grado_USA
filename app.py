@@ -1333,7 +1333,7 @@ def ia_configurada():
 
 
 def llamar_ia(sistema, mensajes, max_tokens=600, temperatura=0.3):
-    """Cliente de IA gratuita compatible con la API de OpenAI (por defecto Groq con Llama 3.3 70B).
+    """Cliente de IA gratuita compatible con la API de OpenAI (por defecto Groq con gpt-oss-120b).
     Para cambiar de proveedor basta con definir IA_BASE_URL, IA_MODEL e IA_API_KEY (Gemini, OpenRouter, etc.). Devuelve texto o None."""
     import urllib.error
     import urllib.request
@@ -1341,8 +1341,11 @@ def llamar_ia(sistema, mensajes, max_tokens=600, temperatura=0.3):
     if not clave:
         return None
     base = _secreto("IA_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
-    cuerpo = {"model": _secreto("IA_MODEL", "llama-3.3-70b-versatile"), "temperature": temperatura, "max_tokens": max_tokens,
+    modelo = _secreto("IA_MODEL", "openai/gpt-oss-120b")
+    cuerpo = {"model": modelo, "temperature": temperatura, "max_tokens": max(max_tokens, 1500),
               "messages": [{"role": "system", "content": sistema}] + mensajes}
+    if modelo.startswith("openai/gpt-oss"):
+        cuerpo["reasoning_effort"] = "low"
     req = urllib.request.Request(base + "/chat/completions", data=json.dumps(cuerpo).encode("utf-8"),
                                  headers={"Authorization": f"Bearer {clave}", "Content-Type": "application/json",
                                           "User-Agent": "mercado-laboral-app/1.0"})
