@@ -1704,6 +1704,8 @@ def llamar_modelo(payload):
     if sim is None:
         return None
     resp = {c: payload[c] for c in sim.vars_form}
+        if resp.get("medio_consiguio_empleo") == "Otro medio":
+        resp["medio_consiguio_empleo"] = "Otro"
     val = sim.validar_respuestas(resp)
     if not val["ok"]:
         return {"errores": [e["mensaje"] for e in val["errores"]]}
