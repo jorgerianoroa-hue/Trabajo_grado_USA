@@ -356,7 +356,7 @@ div[class*="st-key-back_"] button:hover, div[class*="st-key-helpbtn_"] button:ho
 .st-key-chat { position:fixed; top:0; right:0; bottom:0; width:380px !important; max-width:100vw; z-index:100; background:$SURFACE;
     border-left:1px solid $HAIRLINE; padding:28px 20px 20px; display:flex; flex-direction:column; gap:16px; overflow-y:auto; box-sizing:border-box; }
 .chat-title { font-size:19px; font-weight:600; }
-.chat-sub { color:$MUTED; font-size:14px; margin-top:6px; }
+.chat-sub { margin-bottom:10px; color:$MUTED; font-size:14px; margin-top:6px; }
 .st-key-chat_msgs { flex:1 1 auto; min-height:140px; overflow-y:auto; }
 .st-key-chat > div:has(> .st-key-chat_msgs) { flex:1 1 auto; min-height:140px; }
 .st-key-chat [data-testid="stChatMessage"] { background:transparent; padding:0; gap:10px; }
@@ -1445,7 +1445,7 @@ def asistente():
     with st.container(key="chat"):
         with st.container(key="chat_close"):
             st.button("✕", key="chat_close_btn", on_click=alternar_chat, help="Cerrar el asistente")
-        st.markdown('<div><span class="chat-title">Asistente virtual</span><span class="tag">En desarrollo</span>'
+        st.markdown('<div><span class="chat-title">Asistente virtual</span><span class="tag">' + ("Con IA" if ia_configurada() else "En desarrollo") + '</span>'
                     '<div class="chat-sub">Pregunta sobre los datos o sube tu hoja de vida para llenar la encuesta.</div></div>',
                     unsafe_allow_html=True)
         mensajes = st.container(key="chat_msgs", border=False)
