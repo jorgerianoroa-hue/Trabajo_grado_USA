@@ -1332,12 +1332,13 @@ def ia_configurada():
     return bool(_secreto("IA_API_KEY") or _secreto("GROQ_API_KEY"))
 
 
-def _pedir(base, modelo, clave, sistema, mensajes, max_tokens, temperatura):
-    """Una llamada a una API compatible con OpenAI. Reintenta ante saturación (503/429). Devuelve (texto, error)."""
+def _pedir(base, modelo, clave, mensajes, herramientas=None):
+    """Una llamada a una API compatible con OpenAI. Reintenta ante saturación (503/429). Devuelve (mensaje, error)."""
     import urllib.error
     import urllib.request
-    cuerpo = {"model": modelo, "temperature": temperatura, "max_tokens": 900,
-              "messages": [{"role": "system", "content": sistema}] + mensajes}
+    cuerpo = {"model": modelo, "temperature": 0.3, "max_tokens": 900, "messages": mensajes}
+    if herramientas:
+        cuerpo["tools"] = herramientas
     if modelo.startswith("openai/gpt-oss") or "gemini" in modelo:
         cuerpo["reasoning_effort"] = "low"
     datos = json.dumps(cuerpo).encode("utf-8")
@@ -1347,8 +1348,8 @@ def _pedir(base, modelo, clave, sistema, mensajes, max_tokens, temperatura):
                                      headers={"Authorization": f"Bearer {clave}", "Content-Type": "application/json",
                                               "User-Agent": "mercado-laboral-app/1.0"})
         try:
-            with urllib.request.urlopen(req, timeout=40) as r:
-                return json.loads(r.read().decode("utf-8"))["choices"][0]["message"]["content"].strip(), ""
+            with urllib.request.urlopen(req, timeout=45) as r:
+                return json.loads(r.read().decode("utf-8"))["choices"][0]["message"], ""
         except urllib.error.HTTPError as e:
             try:
                 bruto = e.read().decode("utf-8", "replace")
@@ -1368,9 +1369,31 @@ def _pedir(base, modelo, clave, sistema, mensajes, max_tokens, temperatura):
     return None, err
 
 
-def llamar_ia(sistema, mensajes, max_tokens=600, temperatura=0.3):
+def _conversar(base, modelo, clave, sistema, mensajes, herramientas, ejecutar):
+    """Conversa con el modelo; si pide usar la herramienta de datos, la ejecuta y le devuelve el resultado (hasta 5 rondas)."""
+    msgs = [{"role": "system", "content": sistema}] + list(mensajes)
+    for _ in range(5):
+        m, err = _pedir(base, modelo, clave, msgs, herramientas)
+        if m is None:
+            return None, err
+        llamadas = m.get("tool_calls") or []
+        if not llamadas:
+            contenido = (m.get("content") or "").strip()
+            return (contenido or None), ("" if contenido else "respuesta vacía")
+        msgs.append(m)
+        for t in llamadas:
+            try:
+                args = json.loads(t["function"].get("arguments") or "{}")
+                res = ejecutar(t["function"]["name"], args)
+            except Exception as e:
+                res = f"Error al consultar: {e}"
+            msgs.append({"role": "tool", "tool_call_id": t.get("id", ""), "content": str(res)[:6000]})
+    return None, "demasiadas consultas seguidas"
+
+
+def llamar_ia(sistema, mensajes, herramientas=None, ejecutar=None):
     """IA gratuita por API compatible con OpenAI. Principal: IA_API_KEY / IA_BASE_URL / IA_MODEL (p. ej. Gemini).
-    Respaldo automático: GROQ_API_KEY (gpt-oss-120b) si la principal falla o está saturada. Devuelve texto o None."""
+    Respaldo automático: GROQ_API_KEY (gpt-oss-120b). IA_PRIMERO = "groq" invierte el orden. Devuelve texto o None."""
     intentos = []
     if _secreto("IA_API_KEY"):
         intentos.append((_secreto("IA_BASE_URL", "https://api.groq.com/openai/v1"), _secreto("IA_MODEL", "openai/gpt-oss-120b"), _secreto("IA_API_KEY")))
@@ -1380,12 +1403,108 @@ def llamar_ia(sistema, mensajes, max_tokens=600, temperatura=0.3):
         intentos.reverse()
     errores = []
     for base, modelo, clave in intentos:
-        texto, err = _pedir(base, modelo, clave, sistema, mensajes, max_tokens, temperatura)
+        texto, err = _conversar(base, modelo, clave, sistema, mensajes, herramientas, ejecutar)
+        if texto is None and herramientas:      # si el proveedor no admite herramientas, reintenta sin ellas
+            texto, err2 = _conversar(base, modelo, clave, sistema, mensajes, None, None)
+            err = err2 or err
         if texto:
             return texto
         errores.append(err)
     st.session_state["ia_error"] = " | ".join(errores)[:400] or "sin clave"
     return None
+
+
+# ---------------------------------------------------------------------------
+# ACCESO DE LA IA A LOS DATOS: una única herramienta de solo lectura que calcula con pandas (la IA no ejecuta código)
+# ---------------------------------------------------------------------------
+DIMENSIONES_IA = ["departamento", "anio", "mes", "sexo", "estado_civil", "etnia", "nivel_educativo", "tipo_contrato",
+                  "posicion_ocupacional", "lugar_trabajo", "sector_economico_seccion", "oficio_gran_grupo"]
+HERRAMIENTAS_IA = [{"type": "function", "function": {
+    "name": "consultar_datos",
+    "description": ("Calcula estadísticas sobre la base GEIH 2023-2025 (personas ocupadas). Úsala SIEMPRE para cualquier cifra, cruce o comparación. "
+                    "Métricas: formalidad = % con empleo formal pleno; ingreso_promedio; ingreso_mediana (COP mensual); registros = número de personas en la muestra."),
+    "parameters": {"type": "object", "properties": {
+        "metrica": {"type": "string", "enum": ["formalidad", "ingreso_promedio", "ingreso_mediana", "registros", "todas"]},
+        "agrupar_por": {"type": "array", "items": {"type": "string", "enum": DIMENSIONES_IA}, "description": "0 a 2 variables para desglosar; vacío = total."},
+        "filtros": {"type": "object", "description": "Mapa variable -> lista de valores permitidos. Ej: {\"departamento\": [\"Antioquia\"], \"anio\": [2024]}. Usa los nombres del catálogo."},
+        "ordenar": {"type": "string", "enum": ["mayor_valor", "menor_valor", "grupo"]},
+        "limite": {"type": "integer", "description": "Máximo de filas (por defecto 15, máximo 33)."},
+        "minimo_registros": {"type": "integer", "description": "Excluye grupos con menos registros (por defecto 30)."}},
+        "required": ["metrica"]}}}]
+
+
+def _sin_tildes(t):
+    return "".join(c for c in unicodedata.normalize("NFD", str(t).lower()) if unicodedata.category(c) != "Mn").strip()
+
+
+def _estadisticas(x):
+    return {"registros": len(x), "formalidad_pct": round(float(x["empleo_formal_pleno"].mean()) * 100, 1),
+            "ingreso_promedio": int(round(x["ingreso_laboral_total"].mean())), "ingreso_mediana": int(round(x["ingreso_laboral_total"].median()))}
+
+
+def consultar_datos(args):
+    df = load_data(DATA_PATH)
+    metrica = args.get("metrica", "todas")
+    dims = [d for d in (args.get("agrupar_por") or []) if d in DIMENSIONES_IA][:2]
+    mascara = pd.Series(True, index=df.index)
+    for dim, vals in (args.get("filtros") or {}).items():
+        if dim not in DIMENSIONES_IA:
+            return f"Variable de filtro desconocida: {dim}. Variables válidas: {', '.join(DIMENSIONES_IA)}."
+        vals = vals if isinstance(vals, list) else [vals]
+        col = df[dim].astype(str)
+        validos = sorted(col.unique())
+        elegidos = set()
+        for v in vals:
+            v = _sin_tildes(v)
+            exactos = [u for u in validos if _sin_tildes(u) == v]
+            parecidos = exactos or [u for u in validos if v and v in _sin_tildes(u)]
+            if not parecidos:
+                return f"No existe el valor '{v}' en {dim}. Valores válidos: {'; '.join(validos)[:900]}"
+            elegidos.update(parecidos)
+        mascara &= col.isin(elegidos)
+    sub = df[mascara]
+    if len(sub) == 0:
+        return "Sin registros para esos filtros."
+    minimo = int(args.get("minimo_registros") or 30)
+    limite = max(1, min(int(args.get("limite") or 15), 33))
+    clave = {"formalidad": "formalidad_pct", "ingreso_promedio": "ingreso_promedio", "ingreso_mediana": "ingreso_mediana"}.get(metrica)
+    cols = dims + (["registros", clave] if clave else ["registros"] if metrica == "registros"
+                   else ["registros", "formalidad_pct", "ingreso_promedio", "ingreso_mediana"])
+    if not dims:
+        tabla = pd.DataFrame([_estadisticas(sub)])
+        return f"Registros totales con los filtros: {len(sub)}\n" + tabla[cols].to_csv(index=False, sep="|")
+    filas = []
+    for k, x in sub.groupby([sub[d].astype(str) for d in dims], observed=True):
+        filas.append({**dict(zip(dims, k if isinstance(k, tuple) else (k,))), **_estadisticas(x)})
+    tabla = pd.DataFrame(filas)
+    excluidos = int((tabla["registros"] < minimo).sum())
+    tabla = tabla[tabla["registros"] >= minimo]
+    if len(tabla) == 0:
+        return f"Todos los grupos tienen menos de {minimo} registros."
+    orden = args.get("ordenar") or "mayor_valor"
+    if orden == "grupo":
+        tabla = tabla.sort_values(dims)
+    else:
+        tabla = tabla.sort_values(clave or "registros", ascending=(orden == "menor_valor"))
+    total = len(tabla)
+    tabla = tabla.head(limite)
+    nota = f"\n(Se muestran {len(tabla)} de {total} grupos" + (f"; {excluidos} grupos con menos de {minimo} registros excluidos" if excluidos else "") + ")"
+    return f"Registros totales con los filtros: {len(sub)}\n" + tabla[cols].to_csv(index=False, sep="|") + nota
+
+
+def ejecutar_herramienta(nombre, args):
+    if nombre == "consultar_datos":
+        return consultar_datos(args)
+    return f"Herramienta desconocida: {nombre}"
+
+
+def catalogo_ia():
+    df = load_data(DATA_PATH)
+    partes = []
+    for d in DIMENSIONES_IA:
+        u = sorted(df[d].unique().tolist()) if d in ("anio", "mes") else sorted(df[d].astype(str).unique())
+        partes.append(f"- {d}: " + "; ".join(str(x)[:70] for x in u))
+    return "\n".join(partes)
 
 
 DESCRIPCION_PAGINAS = {
@@ -1404,10 +1523,15 @@ def sistema_ia(pagina):
         "(GEIH, DANE) 2023-2025. 'Formalidad' = trabajador con empleo formal pleno (contrato y aportes); 'no formal' es el resto. Los ingresos son laborales mensuales en pesos colombianos. "
         "El modelo predictivo (LightGBM) es una estimación estadística, no una promesa ni una garantía de empleo. "
         f"El usuario está viendo {DESCRIPCION_PAGINAS.get(pagina, 'la aplicación')}.\n"
-        + (f"Cifras visibles ahora en pantalla (usa SOLO estas para hablar de números):\n{datos}\n" if datos else "")
-        + "Reglas: responde en español, claro y breve (máximo 4 frases), sin inventar cifras que no estén arriba; si no tienes el dato, di cómo "
-        "encontrarlo en la app (selector de categoría y filtros). Explica conceptos (formalidad, mediana vs promedio, rango del 80%) con lenguaje sencillo. "
-        "Si te piden algo ajeno a la app o al mercado laboral, redirige amablemente.")
+        + (f"Cifras visibles ahora en pantalla (lo que el usuario ve ahora):\n{datos}\n" if datos else "")
+        + "Tienes la herramienta consultar_datos para calcular cualquier cifra sobre la base completa (541 mil personas ocupadas, 2023-2025). "
+        "Úsala siempre que la pregunta pida números, rankings, cruces o comparaciones, y no inventes ni estimes cifras de memoria; puedes llamarla varias veces. "
+        "Si la pregunta no especifica año o departamento, usa toda la base y dilo. Los filtros deben usar EXACTAMENTE estos valores:\n" + catalogo_ia() + "\n"
+        "Reglas: responde en español, claro y breve (máximo 5 frases), con cifras redondeadas (porcentajes con un decimal, pesos con separador de miles) y menciona "
+        "el número de registros cuando el grupo sea pequeño (menos de 100). Los datos vienen de una encuesta: no afirmes causalidad. "
+        "Si no se puede calcular con las variables disponibles, dilo y propón la alternativa más cercana. "
+        "Explica conceptos (formalidad, mediana vs promedio, rango del 80%) con lenguaje sencillo. Si te piden algo ajeno a la app o al mercado laboral, redirige amablemente.")
+
 
 
 def responder(pregunta, pagina):
@@ -1417,7 +1541,7 @@ def responder(pregunta, pagina):
                 "Completo la encuesta con lo que encuentre y solo te pregunto lo que falte.")
     if ia_configurada():
         hist = [{"role": m["role"], "content": m["content"]} for m in st.session_state.get("chat", [])[1:][-8:]]
-        r = llamar_ia(sistema_ia(pagina), hist + [{"role": "user", "content": pregunta}])
+        r = llamar_ia(sistema_ia(pagina), hist + [{"role": "user", "content": pregunta}], HERRAMIENTAS_IA, ejecutar_herramienta)
         if r:
             return r
         return "No pude conectarme con el asistente (" + st.session_state.get("ia_error", "sin detalle") + "). Inténtalo de nuevo en unos segundos."
