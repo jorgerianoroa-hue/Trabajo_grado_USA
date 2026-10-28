@@ -1625,6 +1625,14 @@ def asistente():
             for m in st.session_state.chat:
                 avatar = ":material/smart_toy:" if m["role"] == "assistant" else ":material/person:"
                 st.chat_message(m["role"], avatar=avatar).write(m["content"])
+        if len(st.session_state.chat) > 1:          # que el chat baje solo hasta el último mensaje
+            _bajar = ("<script>/*" + str(time.time()) + "*/const d=window.parent.document;const f=()=>{const c=d.querySelector('.st-key-chat_msgs');"
+                      "if(!c)return;c.scrollTop=c.scrollHeight;const u=c.querySelectorAll('[data-testid=\"stChatMessage\"]');"
+                      "if(u.length)u[u.length-1].scrollIntoView({block:'end'});};f();setTimeout(f,150);setTimeout(f,500);</script>")
+            if hasattr(st, "iframe"):
+                st.iframe(_bajar, height=1)
+            else:
+                components.html(_bajar, height=0)
 
 
 # ---------------------------------------------------------------------------
