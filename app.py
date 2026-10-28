@@ -219,19 +219,15 @@ div[class*="st-key-sort_"] button[kind="segmented_controlActive"], div[class*="s
 .dn-cap { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; font-size:12px; color:$MUTED; }
 .dn-cap b { font-size:14px; color:$TEXT; font-weight:600; }
 .dn-cap i { font-style:normal; font-weight:600; } .dn-cap i.up { color:$PRIMARY; } .dn-cap i.down { color:$ACCENT_TEXT; }
-div[class*="st-key-pill_"] { margin-bottom:-.2rem; }
-div[class*="st-key-pill_"] [data-testid="stButtonGroup"], div[class*="st-key-pill_"] [data-testid="stElementContainer"] { width:100% !important; }
-div[class*="st-key-pill_"] [role="radiogroup"] { display:flex; flex-wrap:nowrap; gap:6px; width:100% !important; max-width:none !important; }
+div[class*="st-key-pill_"] { margin-left:auto; width:100%; display:flex; flex-direction:row !important; align-items:center; justify-content:flex-end; gap:14px; }
+.gq { font-size:14px; color:$MUTED2; white-space:nowrap; }
+div[class*="st-key-pill_"] [data-testid="stSelectbox"] { width:270px; flex:0 0 270px; }
+div[class*="st-key-pill_"] .react-aria-ComboBox [role="group"] { background:$SURFACE !important; border:1.5px solid $PRIMARY_DARK !important; border-radius:10px; min-height:38px; }
+div[class*="st-key-pill_"] .react-aria-ComboBox input { font-weight:600; color:$PRIMARY_DARK !important; -webkit-text-fill-color:$PRIMARY_DARK; }
+div[class*="st-key-pill_"] .react-aria-ComboBox button { background:transparent !important; color:$PRIMARY_DARK; }
+.gq { line-height:38px; }
+@media (max-width:900px) { div[class*="st-key-pill_"] { flex-wrap:wrap; justify-content:flex-start; } div[class*="st-key-pill_"] [data-testid="stSelectbox"] { width:100%; flex:1 1 100%; } }
 
-div[class*="st-key-pill_"] button { flex:1 1 auto; min-width:max-content; white-space:nowrap; height:40px; min-height:0; padding:0 10px; border:1px solid $BORDER; border-radius:10px;
-    background:$SURFACE; color:$MUTED2; font-size:14px; font-weight:500; transition:background .15s, color .15s, border-color .15s; }
-div[class*="st-key-pill_"] button:hover { background:$FIELD; color:$TEXT; }
-div[class*="st-key-pill_"] button[kind="segmented_controlActive"], div[class*="st-key-pill_"] button[data-testid="stBaseButton-segmented_controlActive"],
-div[class*="st-key-pill_"] button[data-selected="true"], div[class*="st-key-pill_"] button[aria-checked="true"] {
-    background:$PRIMARY_DARK !important; color:#FFFFFF !important; border-color:$PRIMARY_DARK !important; font-weight:600; }
-div[class*="st-key-pill_"] button p { color:inherit !important; }
-@media (max-width:1500px) { div[class*="st-key-pill_"] button { padding:0 8px; font-size:13px; } .page-title { font-size:clamp(16px, 1.4vw, 21px); } }
-@media (max-width:900px) { div[class*="st-key-pill_"] [role="radiogroup"] { flex-wrap:wrap !important; } div[class*="st-key-pill_"] button { flex:1 1 28% !important; padding:0 4px !important; font-size:13px; } }
 /* Análisis sin desplazamiento vertical: las tarjetas toman el alto que queda en la pantalla (la lista de cada ranking se desplaza dentro de su tarjeta) */
 @media (min-width:1100px) and (min-height:640px) {
     :root { --alto: calc(100vh - 314px); }
@@ -239,7 +235,6 @@ div[class*="st-key-pill_"] button p { color:inherit !important; }
     .block-container:has(.st-key-filters) [data-testid="stVerticalBlock"] { gap:.5rem; }
     .block-container:has(.st-key-filters) .page-title { font-size:22px; }
     .block-container:has(.st-key-filters) .page-sub { display:none; }
-    div[class*="st-key-pill_"] button { height:32px; font-size:13px; border-radius:8px; }
     .st-key-filters { padding:4px 10px; gap:4px; border-radius:10px; }
     .st-key-filters .fh-s { display:none; }
     .st-key-filters [data-baseweb="select"] > div { min-height:30px; font-size:13px; }
@@ -1129,16 +1124,20 @@ def ayuda_card(pagina):
                       on_click=lambda: st.session_state.update({k: True}))
 
 
+ETIQUETAS_GRUPO = {"Departamento": "Departamento", "Tiempo": "Tiempo · año y mes", "Educación": "Nivel educativo", "Demografía": "Demografía · sexo, etnia",
+                   "Contrato": "Contrato y lugar de trabajo", "Sector": "Sector económico", "Oficio": "Oficio"}
+
+
 def selector_grupo(pagina):
-    """Botones de grupo (Departamento, Tiempo, Educación…) encima de los filtros. Devuelve el grupo elegido."""
+    """Pregunta + lista desplegable: el usuario elige la categoría y debajo se muestran sus gráficos. Devuelve el grupo elegido."""
     nombres = [g[0] for g in GRUPOS]
     k = f"grupo_{pagina}"
+    if st.session_state.get(k) not in nombres:
+        st.session_state[k] = nombres[0]
     with st.container(key=f"pill_{pagina}"):
-        if hasattr(st, "segmented_control"):
-            v = st.segmented_control("Grupo de gráficos", nombres, default=nombres[0], selection_mode="single", key=k, label_visibility="collapsed")
-        else:
-            v = st.radio("Grupo de gráficos", nombres, horizontal=True, key=k, label_visibility="collapsed")
-    return v or st.session_state.get(f"_{k}_ult", nombres[0])
+        html('<div class="gq">¿Por cuál categoría te gustaría ver el análisis?</div>')
+        v = st.selectbox("Categoría del análisis", nombres, key=k, format_func=lambda n: ETIQUETAS_GRUPO.get(n, n), label_visibility="collapsed")
+    return v or nombres[0]
 
 
 def bloque_graficos(df, tipo, pagina, ref, ref2, nac, grupo=None):
