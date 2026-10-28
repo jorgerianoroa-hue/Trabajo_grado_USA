@@ -1275,12 +1275,27 @@ def pie():
 
 def tarjetas(items):
     """items: (etiqueta con marcador, valor, clase de tamaño, color del valor, línea inferior)."""
+    _ctx("tarjetas", "; ".join(f"{_plano(l)}: {_plano(v)} {_plano(sub)}".strip() for l, v, _, _, sub in items))
     html('<div class="kpis">' + "".join(
         f'<div class="kpi"><span class="kpi-l">{lab}</span><span class="kpi-v {tam}" style="color:{col}">{val}</span>{sub}</div>'
         for lab, val, tam, col, sub in items) + '</div>')
 
 
+def _ctx(clave, texto):
+    """Guarda en la sesión un resumen en texto de lo que se está viendo; el asistente lo usa como contexto."""
+    try:
+        d = st.session_state.setdefault("ctx_ia", {})
+        d[st.session_state.get("page", "inicio")] = {**d.get(st.session_state.get("page", "inicio"), {}), clave: texto}
+    except Exception:
+        pass
+
+
+def _plano(t):
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", str(t))).strip()
+
+
 def franja(texto):
+    _ctx("resumen", _plano(texto))
     html(f'<div class="insight"><span class="ins-dot"></span><span style="flex:1 1 400px">{texto}</span></div>')
 
 
@@ -1289,8 +1304,8 @@ def sin_registros():
          '<span class="d-text mut">No hay registros para los filtros seleccionados. Quita algún filtro para ver resultados.</span></div>')
 
 
-BIENVENIDA = {"role": "assistant", "content": "Hola. Estoy en desarrollo, pero pronto podré responder "
-              "tus preguntas sobre los datos de cada sección."}
+BIENVENIDA = {"role": "assistant", "content": "Hola. Pregúntame sobre los datos de esta sección o cómo interpretar "
+              "los resultados."}
 SUGERENCIAS = {
     "formalidad": ["¿Qué departamento tiene mayor formalidad?",
                    "¿Cómo cambia la formalidad según el nivel educativo?",
@@ -1305,13 +1320,73 @@ SUGERENCIAS["modelo"] = ["Quiero llenar la encuesta con mi hoja de vida", "¿Qu�
 SUGERENCIAS_BASE = ["¿Qué datos puedo consultar aquí?", "¿Qué significa trabajo formal?"]
 
 
+def _secreto(nombre, defecto=None):
+    try:
+        v = st.secrets.get(nombre)
+    except Exception:
+        v = None
+    return v or os.environ.get(nombre) or defecto
+
+
+def ia_configurada():
+    return bool(_secreto("IA_API_KEY") or _secreto("GROQ_API_KEY"))
+
+
+def llamar_ia(sistema, mensajes, max_tokens=600, temperatura=0.3):
+    """Cliente de IA gratuita compatible con la API de OpenAI (por defecto Groq con Llama 3.3 70B).
+    Para cambiar de proveedor basta con definir IA_BASE_URL, IA_MODEL e IA_API_KEY (Gemini, OpenRouter, etc.). Devuelve texto o None."""
+    import urllib.request
+    clave = _secreto("IA_API_KEY") or _secreto("GROQ_API_KEY")
+    if not clave:
+        return None
+    base = _secreto("IA_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
+    cuerpo = {"model": _secreto("IA_MODEL", "llama-3.3-70b-versatile"), "temperature": temperatura, "max_tokens": max_tokens,
+              "messages": [{"role": "system", "content": sistema}] + mensajes}
+    req = urllib.request.Request(base + "/chat/completions", data=json.dumps(cuerpo).encode("utf-8"),
+                                 headers={"Authorization": f"Bearer {clave}", "Content-Type": "application/json",
+                                          "User-Agent": "mercado-laboral-app/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=40) as r:
+            return json.loads(r.read().decode("utf-8"))["choices"][0]["message"]["content"].strip()
+    except Exception:
+        return None
+
+
+DESCRIPCION_PAGINAS = {
+    "inicio": "la portada con el mapa de Colombia y los accesos a cada análisis",
+    "formalidad": "el análisis descriptivo de formalidad laboral (porcentaje de trabajo formal vs no formal por departamento, tiempo, educación, demografía, contrato, sector y oficio)",
+    "ingresos": "el análisis descriptivo de ingresos laborales (promedio y mediana por departamento, tiempo, educación, demografía, contrato, sector y oficio)",
+    "modelo": "el modelo predictivo: una encuesta de 15 preguntas que estima la probabilidad de empleo formal y el ingreso mensual típico de un perfil",
+}
+
+
+def sistema_ia(pagina):
+    ctx = st.session_state.get("ctx_ia", {}).get(pagina, {})
+    datos = "\n".join(f"- {v}" for v in ctx.values() if v)
+    return (
+        "Eres el asistente de una aplicación web sobre el mercado laboral colombiano. Los datos provienen de la Gran Encuesta Integrada de Hogares "
+        "(GEIH, DANE) 2023-2025. 'Formalidad' = trabajador con empleo formal pleno (contrato y aportes); 'no formal' es el resto. Los ingresos son laborales mensuales en pesos colombianos. "
+        "El modelo predictivo (LightGBM) es una estimación estadística, no una promesa ni una garantía de empleo. "
+        f"El usuario está viendo {DESCRIPCION_PAGINAS.get(pagina, 'la aplicación')}.\n"
+        + (f"Cifras visibles ahora en pantalla (usa SOLO estas para hablar de números):\n{datos}\n" if datos else "")
+        + "Reglas: responde en español, claro y breve (máximo 4 frases), sin inventar cifras que no estén arriba; si no tienes el dato, di cómo "
+        "encontrarlo en la app (selector de categoría y filtros). Explica conceptos (formalidad, mediana vs promedio, rango del 80%) con lenguaje sencillo. "
+        "Si te piden algo ajeno a la app o al mercado laboral, redirige amablemente.")
+
+
 def responder(pregunta, pagina):
-    """Punto de integración del asistente: reemplazar por la llamada al modelo."""
+    """Asistente: si hay una clave de IA configurada responde con el modelo; si no, usa las respuestas de respaldo."""
     if "hoja de vida" in pregunta.lower():
         return ("Con gusto. Sube tu hoja de vida (PDF o Word) con el botón de arriba, o pega su texto aquí mismo. "
                 "Completo la encuesta con lo que encuentre y solo te pregunto lo que falte.")
-    return ("Todavía no puedo responder preguntas. Estoy en desarrollo y pronto podré "
-            "ayudarte a interpretar los datos de esta sección.")
+    if ia_configurada():
+        hist = [{"role": m["role"], "content": m["content"]} for m in st.session_state.get("chat", [])[1:][-8:]]
+        r = llamar_ia(sistema_ia(pagina), hist + [{"role": "user", "content": pregunta}])
+        if r:
+            return r
+        return "No pude conectarme con el asistente en este momento. Inténtalo de nuevo en unos segundos."
+    return ("El asistente todavía no está conectado a una IA. Cuando se configure la clave, podré ayudarte "
+            "a interpretar los datos de esta sección.")
 
 
 def enviar(pregunta):
@@ -1966,6 +2041,10 @@ def resultado_modelo(resp):
     pos = lambda v: max(0.0, min(100.0, v / tope * 100))
     base_f, base_i = resp.get("base_formal"), resp.get("base_ingreso")
     veredicto = "Empleo formal probable" if p >= 0.5 else "Empleo informal más probable"
+    _ctx("resultado", f"Resultado del usuario: probabilidad de empleo formal {p * 100:.0f}% ({veredicto}); ingreso mediano {fmt_cop(med)}; "
+         f"rango probable 80%: {fmt_cop(bajo)} a {fmt_cop(alto)}"
+         + (f"; promedio del mercado {base_f * 100:.0f}%" if base_f is not None else "") + ". Factores principales: "
+         + "; ".join(_plano(f.get("etiqueta", "")) + " (" + str(f.get("efecto", "")) + ")" for f in (resp.get("det_formal", [])[:4]) if isinstance(f, dict)))
     marca_base = f'<span class="rg-base" style="left:{base_f * 100:.1f}%"></span>' if base_f is not None else ""
     c1, c2 = st.columns(2, gap="medium")
     with c1, st.container(key="card_res_formal"):
