@@ -1332,41 +1332,58 @@ def ia_configurada():
     return bool(_secreto("IA_API_KEY") or _secreto("GROQ_API_KEY"))
 
 
-def llamar_ia(sistema, mensajes, max_tokens=600, temperatura=0.3):
-    """Cliente de IA gratuita compatible con la API de OpenAI (por defecto Groq con gpt-oss-120b).
-    Para cambiar de proveedor basta con definir IA_BASE_URL, IA_MODEL e IA_API_KEY (Gemini, OpenRouter, etc.). Devuelve texto o None."""
+def _pedir(base, modelo, clave, sistema, mensajes, max_tokens, temperatura):
+    """Una llamada a una API compatible con OpenAI. Reintenta ante saturación (503/429). Devuelve (texto, error)."""
     import urllib.error
     import urllib.request
-    clave = _secreto("IA_API_KEY") or _secreto("GROQ_API_KEY")
-    if not clave:
-        return None
-    base = _secreto("IA_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
-    modelo = _secreto("IA_MODEL", "openai/gpt-oss-120b")
     cuerpo = {"model": modelo, "temperature": temperatura, "max_tokens": max(max_tokens, 1500),
               "messages": [{"role": "system", "content": sistema}] + mensajes}
     if modelo.startswith("openai/gpt-oss"):
         cuerpo["reasoning_effort"] = "low"
-    req = urllib.request.Request(base + "/chat/completions", data=json.dumps(cuerpo).encode("utf-8"),
-                                 headers={"Authorization": f"Bearer {clave}", "Content-Type": "application/json",
-                                          "User-Agent": "mercado-laboral-app/1.0"})
-    try:
-        with urllib.request.urlopen(req, timeout=40) as r:
-            return json.loads(r.read().decode("utf-8"))["choices"][0]["message"]["content"].strip()
-    except urllib.error.HTTPError as e:
+    datos = json.dumps(cuerpo).encode("utf-8")
+    err = ""
+    for intento in range(3):
+        req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=datos,
+                                     headers={"Authorization": f"Bearer {clave}", "Content-Type": "application/json",
+                                              "User-Agent": "mercado-laboral-app/1.0"})
         try:
-            bruto = e.read().decode("utf-8", "replace")
-            j = json.loads(bruto)
-            j = j[0] if isinstance(j, list) and j else j
-            det = (j.get("error", {}) or {}).get("message", "") if isinstance(j, dict) else ""
-            det = det or bruto[:200]
-        except Exception:
-            det = ""
-        det = f"{det} [{base} · {modelo}]"
-        st.session_state["ia_error"] = f"HTTP {e.code}: {det}"[:300]
-        return None
-    except Exception as e:
-        st.session_state["ia_error"] = f"{type(e).__name__}: {e}"[:300]
-        return None
+            with urllib.request.urlopen(req, timeout=40) as r:
+                return json.loads(r.read().decode("utf-8"))["choices"][0]["message"]["content"].strip(), ""
+        except urllib.error.HTTPError as e:
+            try:
+                bruto = e.read().decode("utf-8", "replace")
+                j = json.loads(bruto)
+                j = j[0] if isinstance(j, list) and j else j
+                det = (j.get("error", {}) or {}).get("message", "") if isinstance(j, dict) else ""
+                det = det or bruto[:200]
+            except Exception:
+                det = ""
+            err = f"HTTP {e.code}: {det} [{modelo}]"[:300]
+            if e.code in (429, 500, 502, 503, 504) and intento < 2:
+                time.sleep(1.5 * (intento + 1))
+                continue
+            return None, err
+        except Exception as e:
+            return None, f"{type(e).__name__}: {e}"[:300]
+    return None, err
+
+
+def llamar_ia(sistema, mensajes, max_tokens=600, temperatura=0.3):
+    """IA gratuita por API compatible con OpenAI. Principal: IA_API_KEY / IA_BASE_URL / IA_MODEL (p. ej. Gemini).
+    Respaldo automático: GROQ_API_KEY (gpt-oss-120b) si la principal falla o está saturada. Devuelve texto o None."""
+    intentos = []
+    if _secreto("IA_API_KEY"):
+        intentos.append((_secreto("IA_BASE_URL", "https://api.groq.com/openai/v1"), _secreto("IA_MODEL", "openai/gpt-oss-120b"), _secreto("IA_API_KEY")))
+    if _secreto("GROQ_API_KEY"):
+        intentos.append(("https://api.groq.com/openai/v1", "openai/gpt-oss-120b", _secreto("GROQ_API_KEY")))
+    errores = []
+    for base, modelo, clave in intentos:
+        texto, err = _pedir(base, modelo, clave, sistema, mensajes, max_tokens, temperatura)
+        if texto:
+            return texto
+        errores.append(err)
+    st.session_state["ia_error"] = " | ".join(errores)[:400] or "sin clave"
+    return None
 
 
 DESCRIPCION_PAGINAS = {
