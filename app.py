@@ -429,6 +429,8 @@ div[class*="st-key-predecir_"] button:disabled { background:$TRACK; color:$MUTED
 div[class*="st-key-predecir_"] button p { color:inherit; font-size:inherit; font-weight:inherit; }
 .rs { display:flex; flex-direction:column; gap:6px; padding:6px 0 10px; }
 .rs-l { font-size:13px; color:$MUTED2; }
+.rs-fx { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:12px 48px; margin:6px 0 14px; }
+.rs-fx ul { margin:6px 0 0; padding-left:18px; font-size:13px; line-height:1.5; color:$TEXT; } .rs-fx li { margin-bottom:4px; }
 .rs-v { font-size:clamp(26px, 3.2vw, 36px); overflow-wrap:anywhere; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; line-height:1.1; }
 .rs-r { font-size:14px; color:$TEXT; font-weight:500; }
 .rs-empty { padding:28px 8px; text-align:center; color:$MUTED; font-size:14px; line-height:1.6; }
@@ -1550,7 +1552,7 @@ def mostrar_valor(campo, v):
     if campo == "oficio_gran_grupo":
         return OFICIOS.get(v, (v, ""))[0]
     return {"sector_economico_seccion": etiqueta_sector, "area_titulo_campo_amplio": etiqueta_area,
-            "zona": etiqueta_zona}.get(campo, str)(v) if campo != "minutos_desplazamiento" else f"{v} min"
+            "zona": etiqueta_zona}.get(campo, str)(v) if campo != "minutos_desplazamiento" else ("No quiero desplazarme" if v == 0 else f"{v} min")
 
 
 @st.cache_data(show_spinner=False)
@@ -1678,11 +1680,39 @@ def al_cambiar_lugar():
         st.session_state["m_min"] = 0
 
 
+@st.cache_resource(show_spinner=False)
+def cargar_simulador():
+    """Carga una sola vez los dos modelos LightGBM de la tesis (simulador.py + carpeta simulador_export/ junto a app.py).
+    Devuelve None si el motor no está disponible (la app sigue funcionando, sin predicción)."""
+    try:
+        import sys
+        aqui = str(Path(__file__).resolve().parent)
+        if aqui not in sys.path:
+            sys.path.insert(0, aqui)
+        import simulador
+        return simulador.cargar()
+    except Exception:
+        return None
+
+
 def llamar_modelo(payload):
-    """Punto de integración con el backend. Debe devolver
-    {"probabilidad_formal": 0.91, "ingreso_mediana": 4200000, "ingreso_rango_80": [bajo, alto], "advertencias": ["R-14"]}.
-    Devuelve None mientras el modelo no esté conectado."""
-    return None
+    """Conecta con el simulador de la tesis (LightGBM de formalidad e ingreso). Devuelve
+    {"probabilidad_formal", "ingreso_mediana", "ingreso_rango_80": [p10, p90], "advertencias": [textos],
+     "factores_ingreso": [textos], "factores_formal": [textos]}
+    o {"errores": [textos]} si la combinación de respuestas casi no existe en los datos; None si el motor no está disponible."""
+    sim = cargar_simulador()
+    if sim is None:
+        return None
+    resp = {c: payload[c] for c in sim.vars_form}
+    val = sim.validar_respuestas(resp)
+    if not val["ok"]:
+        return {"errores": [e["mensaje"] for e in val["errores"]]}
+    ing = sim.predecir_ingreso(resp, validar=False)
+    frm = sim.predecir_formalidad(resp, validar=False)
+    return {"probabilidad_formal": frm["probabilidad"], "ingreso_mediana": ing["ingreso_mediana"],
+            "ingreso_rango_80": [ing["intervalo_80"]["p10"], ing["intervalo_80"]["p90"]],
+            "advertencias": [a["mensaje"] for a in val["advertencias"]],
+            "factores_ingreso": ing["mensajes"], "factores_formal": frm["mensajes"]}
 
 
 def predecir_perfil(payload):
@@ -1796,7 +1826,7 @@ def controles_paso(paso, sectores, sec_o, cat):
             pregunta("¿En qué departamento te gustaría trabajar?", "Puedes escribir para buscar.")
             st.selectbox("Departamento", cat["departamento"], index=None, placeholder="Selecciona el departamento", key="m_dep", label_visibility="collapsed")
         if hecho("departamento") and (ver("zona") or r["departamento"] in DEP_SOLO_CABECERA and ver("departamento")):
-            pregunta("¿Prefieres trabajar en la cabecera municipal o en zona rural?")
+            pregunta("¿Prefieres vivir en la cabecera municipal o en zona rural?")
             solo = r["departamento"] in DEP_SOLO_CABECERA
             st.radio("Zona", ["Cabecera", "Resto"], index=None, horizontal=True, key="m_zona", format_func=etiqueta_zona,
                      disabled=solo, label_visibility="collapsed")
@@ -1830,7 +1860,7 @@ def controles_paso(paso, sectores, sec_o, cat):
         if hecho("lugar_trabajo") and hecho("tipo_contrato") and hecho("medio_consiguio_empleo") and ver("minutos_desplazamiento"):
             pregunta("¿Cuántos minutos estarías dispuesto(a) a tardar en llegar al trabajo?", "Solo ida, entre 0 y 300. Si quieres trabajar desde tu vivienda, es 0.")
             st.selectbox("Minutos de desplazamiento", MINUTOS, index=None, placeholder="Selecciona o escribe los minutos",
-                         format_func=lambda v: "0 min (no me desplazo)" if v == 0 else f"{v} min", key="m_min", label_visibility="collapsed")
+                         format_func=lambda v: "No quiero desplazarme" if v == 0 else f"{v} min", key="m_min", label_visibility="collapsed")
             nota("Si tu tiempo exacto no aparece, elige el más cercano.")
 
 
@@ -1845,7 +1875,12 @@ def resultado_modelo(resp):
          f'<div class="rs-r">Rango del 80%: {fmt_cop(bajo)} – {fmt_cop(alto)}</div>'
          f'<div class="sv-h">Pesos nominales de 2025. El modelo tiende a subestimar los ingresos altos; por eso el rango acompaña siempre al valor central.</div></div></div>')
     for i in resp.get("advertencias", []):
-        aviso(dict(tipo="advertencia", msg=MENSAJES_REGLA.get(i, f"El perfil activó la regla {i}.")))
+        aviso(dict(tipo="advertencia", msg=MENSAJES_REGLA.get(i, i)))
+    if resp.get("factores_ingreso") or resp.get("factores_formal"):
+        lis = lambda xs: "".join(f"<li>{escape(x)}</li>" for x in xs)
+        html('<div class="rs-fx"><div><div class="rs-l">Qué pesa en tu ingreso estimado</div><ul>' + lis(resp.get("factores_ingreso", [])) + '</ul></div>'
+             '<div><div class="rs-l">Qué pesa en tu probabilidad de empleo formal</div><ul>' + lis(resp.get("factores_formal", [])) + '</ul></div></div>'
+             '<div class="sv-h">Son estimaciones estadísticas de personas con un perfil similar (GEIH 2023-2025), no garantías ni relaciones causales.</div>')
 
 
 def ir_vista(vista, paso=None):
@@ -1964,7 +1999,11 @@ def pagina_modelo(df_raw):
             res = ss["m_resultado"]
             with st.container(key="card_resultado"):
                 html('<div class="eyebrow">Resultado</div>')
-                if res["respuesta"] is None:
+                if res["respuesta"] is not None and res["respuesta"].get("errores"):
+                    for e in res["respuesta"]["errores"]:
+                        aviso(dict(tipo="bloqueo", msg=e))
+                    html('<div class="sv-h">Con esta combinación el modelo no puede estimar un resultado confiable. Vuelve al resumen y ajusta tus respuestas.</div>')
+                elif res["respuesta"] is None:
                     html('<div class="rs-empty">El modelo aún no está conectado, por lo que no se generó ninguna predicción.</div>')
                     with st.expander("Ver los datos que se enviarán al modelo"):
                         st.json(res["payload"])
