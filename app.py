@@ -201,7 +201,7 @@ div[class*="st-key-chip_"] button:hover { background:#DCEAE6; color:$PRIMARY_DAR
 
 /* Tarjetas de gráfico y de detalle */
 div[class*="st-key-card_"], div[class*="st-key-detail_"] { background:$SURFACE; border:1px solid $BORDER; border-radius:12px; padding:20px; gap:16px; }
-.card-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px; }
+.card-head { margin-bottom:6px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px; }
 .card-title { font-size:15px; overflow-wrap:anywhere; font-weight:600; }
 .card-sub { font-size:13px; color:$MUTED; margin-top:4px; }
 .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:13px; color:$MUTED2; align-items:center; }
@@ -381,7 +381,7 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 
 /* Encuesta del modelo predictivo */
 .sv-steps { display:grid; grid-template-columns:1fr; gap:4px; }
-.sv-step { border-left:3px solid $HAIRLINE; padding:6px 0 6px 12px; font-size:14px; color:$MUTED; }
+.sv-step { border-left:3px solid $HAIRLINE; padding:4px 0 4px 12px; font-size:14px; color:$MUTED; }
 .sv-step b { display:block; font-size:11px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; }
 .sv-step.done { border-left-color:$NOFORMAL; color:$MUTED2; }
 .sv-step.on { border-left-color:$PRIMARY_DARK; color:$PRIMARY_DARK; font-weight:600; }
@@ -402,6 +402,40 @@ div[class*="st-key-sug_"] button p { color:inherit; font-size:inherit; text-alig
 .sv-msg.bloqueo { background:#FBEAE5; border:1px solid #E8B9AA; color:#7A2410; }
 div[class*="st-key-card_encuesta"] { padding:28px 32px; gap:14px; }
 .pf-grid { margin-bottom:14px; display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:6px 40px; margin-top:6px; }
+.mv-steps { display:flex; justify-content:flex-end; align-items:center; gap:10px; }
+.mv-s { display:flex; align-items:center; gap:8px; font-size:14px; color:$MUTED; font-weight:500; }
+.mv-s i { font-style:normal; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; background:$TRACK; color:$MUTED2; }
+.mv-s.on { color:$PRIMARY_DARK; font-weight:600; } .mv-s.on i { background:$PRIMARY_DARK; color:#fff; }
+.mv-s.done i { background:$NOFORMAL; color:#fff; }
+.mv-s + .mv-s::before { content:""; width:28px; height:2px; background:$HAIRLINE; margin-right:2px; }
+.st-key-pf_row [data-testid="stHorizontalBlock"] { align-items:stretch; } .st-key-pf_row { margin-bottom:12px; }
+.st-key-pf_row [data-testid="stColumn"] > [data-testid="stVerticalBlock"] { height:100%; }
+.st-key-pf_row [data-testid="stColumn"] [data-testid="stLayoutWrapper"] { flex:1 1 auto; }
+div[class*="st-key-card_pfg_"] { height:100%; flex:1 1 auto; padding:16px 18px 10px; gap:0; background:$BG; }
+.pf2-g { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:$PRIMARY_DARK; margin-bottom:6px; }
+.pf2-g b { width:20px; height:20px; border-radius:50%; background:$PRIMARY_DARK; color:#fff; font-size:11px; display:inline-flex; align-items:center; justify-content:center; }
+.pf2 { padding:11px 0; border-top:1px solid $HAIRLINE; }
+.pf2-l { font-size:11.5px; color:$MUTED; display:flex; align-items:center; gap:6px; }
+.pf2-l i { font-style:normal; font-size:9.5px; color:$ACCENT_TEXT; border:1px solid $ACCENT; border-radius:999px; padding:0 5px; }
+.pf2-v { font-size:15px; font-weight:500; color:$TEXT; overflow-wrap:anywhere; line-height:1.3; margin-top:1px; }
+div[class*="st-key-card_pfg_"] [data-testid="stElementContainer"]:has(button) { margin-top:auto; }
+div[class*="st-key-card_pfg_"] button { min-height:0; padding:2px 0; font-size:13px; color:$PRIMARY; justify-content:flex-start; }
+div[class*="st-key-card_res_"], div[class*="st-key-card_fx_"] { padding:16px 22px; gap:4px; }
+@media (min-width:1100px) { .block-container:has(.mv-steps) { padding-top:18px; padding-bottom:6px; } .block-container:has(.mv-steps) [data-testid="stVerticalBlock"] { gap:.6rem; } .block-container:has(.mv-steps) .page-sub { margin-bottom:8px; } }
+.rs-bar { position:relative; height:12px; border-radius:999px; background:$NOFORMAL; opacity:1; margin-top:8px; }
+.rs-bar > span:first-child { display:block; height:100%; border-radius:999px; background:$PRIMARY; }
+.rg-base { position:absolute; top:-4px; width:2px; height:20px; background:$ACCENT; }
+.rs-foot { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:13px; color:$MUTED2; margin-top:8px; } .rs-foot b { color:$TEXT; font-weight:600; }
+.rg { position:relative; height:12px; border-radius:999px; background:$TRACK; margin-top:14px; }
+.rg-fill { position:absolute; top:0; height:100%; border-radius:999px; background:#F2C79C; }
+.rg-dot { position:absolute; top:-4px; width:20px; height:20px; margin-left:-10px; border-radius:50%; background:$ACCENT; border:3px solid #fff; box-shadow:0 0 0 1px $ACCENT; }
+.rg-lab { display:flex; justify-content:space-between; gap:8px; font-size:12.5px; color:$MUTED2; margin-top:8px; font-variant-numeric:tabular-nums; } .rg-lab span:nth-child(2) { color:$MUTED; }
+.fx-t { font-size:14px; font-weight:600; margin-bottom:6px; }
+.fx-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:6px 0; border-top:1px solid $HAIRLINE; }
+.fx-main { display:flex; flex-wrap:wrap; column-gap:8px; align-items:baseline; min-width:0; } .fx-n { font-size:13.5px; color:$TEXT; font-weight:500; } .fx-v { font-size:12.5px; color:$MUTED; }
+.fx-chip { font-size:12.5px; font-weight:600; border-radius:999px; padding:3px 10px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.fx-chip.up { background:$TINT; color:$TEAL_TEXT; } .fx-chip.down { background:#FFF1E2; color:$ACCENT_TEXT; } .fx-chip.br { background:$TRACK; color:$MUTED2; }
+.st-key-svnext, .st-key-predecir_modelo { align-items:flex-end; }
 .rs-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px 48px; }
 @media (min-width:1000px) { div[class*="st-key-sv_split"] [data-testid="stColumn"]:first-child { border-right:1px solid $HAIRLINE; padding-right:12px; } }
 @media (max-width:900px) { div[class*="st-key-sv_split"] [data-testid="stHorizontalBlock"] { flex-wrap:wrap; } div[class*="st-key-sv_split"] [data-testid="stColumn"] { flex:1 1 100% !important; min-width:100% !important; }
@@ -422,7 +456,7 @@ div[class*="st-key-card_perfil"], div[class*="st-key-card_resultado"] { padding:
 .pf-row b { font-weight:500; color:$TEXT; text-align:right; }
 .pf-row b.vacio { color:#B5BDC2; }
 .pf-row i { font-style:normal; font-size:10px; color:$ACCENT_TEXT; border:1px solid $ACCENT; border-radius:999px; padding:0 6px; margin-left:6px; }
-div[class*="st-key-predecir_"] { display:flex; justify-content:flex-end; }
+div[class*="st-key-predecir_"] { align-items:flex-end; }
 div[class*="st-key-predecir_"] button { width:auto; padding:0 40px; height:46px; background:$PRIMARY; color:#FFFFFF; border:none; border-radius:8px; font-size:16px; font-weight:600; transition:background .15s; }
 div[class*="st-key-predecir_"] button:hover { background:#0E3340; color:#FFFFFF; }
 div[class*="st-key-predecir_"] button:disabled { background:$TRACK; color:$MUTED; opacity:1; }
@@ -1709,9 +1743,13 @@ def llamar_modelo(payload):
     val = sim.validar_respuestas(resp)
     if not val["ok"]:
         return {"errores": [e["mensaje"] for e in val["errores"]]}
-    ing = sim.predecir_ingreso(resp, validar=False)
-    frm = sim.predecir_formalidad(resp, validar=False)
-    return {"probabilidad_formal": frm["probabilidad"], "ingreso_mediana": ing["ingreso_mediana"],
+    ing = sim.predecir_ingreso(resp, validar=False, n_factores=4)
+    frm = sim.predecir_formalidad(resp, validar=False, n_factores=4)
+    det = lambda r: sorted(r["factores_suben"] + r["factores_bajan"], key=lambda f: -abs(f["efecto"]))
+    return {"det_ingreso": det(ing), "det_formal": det(frm),
+            "base_formal": frm["probabilidad_base_promedio"], "base_ingreso": ing["ingreso_base_promedio"],
+            "mensajes_brecha": [m for m in ing["mensajes"] + frm["mensajes"] if "brecha observada" in m][:1],
+            "probabilidad_formal": frm["probabilidad"], "ingreso_mediana": ing["ingreso_mediana"],
             "ingreso_rango_80": [ing["intervalo_80"]["p10"], ing["intervalo_80"]["p90"]],
             "advertencias": [a["mensaje"] for a in val["advertencias"]],
             "factores_ingreso": ing["mensajes"], "factores_formal": frm["mensajes"]}
@@ -1759,6 +1797,13 @@ def editar_respuestas():
     if st.session_state.get("m_cv_campos"):
         st.session_state["m_editar_todo"] = True
     ir_vista("preguntas", 0)
+
+
+def editar_paso(i):
+    """Desde el resumen: vuelve a las preguntas en el paso elegido (con hoja de vida, muestra todas las preguntas para poder corregir)."""
+    if st.session_state.get("m_cv_campos"):
+        st.session_state["m_editar_todo"] = True
+    ir_vista("preguntas", i)
 
 
 def alternar_editar_todo():
@@ -1866,23 +1911,60 @@ def controles_paso(paso, sectores, sec_o, cat):
             nota("Si tu tiempo exacto no aparece, elige el más cercano.")
 
 
+def valor_corto(variable, valor):
+    if variable == "oficio_gran_grupo":
+        return OFICIOS.get(valor, (valor, ""))[0]
+    if variable == "sector_economico_seccion":
+        return etiqueta_sector(valor)
+    return str(valor)
+
+
+def lista_factores(titulo, factores, unidad):
+    """Lista de factores con chip ▲/▼: lo que sube y lo que baja el resultado frente al perfil promedio."""
+    filas = ""
+    for f in factores:
+        if f.get("tipo") == "brecha_observada":
+            et, cls = f"{f['etiqueta']} · brecha observada", "br"
+        else:
+            et, cls = f["etiqueta"], ("up" if f["efecto"] >= 0 else "down")
+        ef = f"{f['efecto']:+.0f}%" if unidad == "%" else f"{f['efecto']:+.1f} pp"
+        flecha = "▲" if f["efecto"] >= 0 else "▼"
+        filas += (f'<div class="fx-row"><div class="fx-main"><span class="fx-n">{escape(et)}</span><span class="fx-v">{escape(valor_corto(f["variable"], f["valor"]))}</span></div>'
+                  f'<span class="fx-chip {cls}">{flecha} {ef.replace("-", "−")}</span></div>')
+    return f'<div class="fx"><div class="fx-t">{titulo}</div>{filas or "<div class=sv-h>Sin factores destacados.</div>"}</div>'
+
+
 def resultado_modelo(resp):
-    """Dibuja la respuesta del backend (forma definida en la especificación)."""
+    """Dibuja la respuesta del backend: dos cifras principales y, debajo, qué pesa en cada una."""
     p, (bajo, alto) = resp["probabilidad_formal"], resp["ingreso_rango_80"]
-    html(f'<div class="rs-grid"><div class="rs"><div class="rs-l">Probabilidad de empleo formal pleno</div>'
-         f'<div class="rs-v" style="color:{PRIMARY}">{fmt_pct(p)}</div>'
-         f'<div class="d-stack"><span style="width:{p * 100:.1f}%;background:{PRIMARY}"></span><span style="flex:1;background:{NOFORMAL}"></span></div></div>'
-         f'<div class="rs"><div class="rs-l">Ingreso laboral mensual típico (mediana)</div>'
-         f'<div class="rs-v" style="color:{ACCENT_TEXT}">{fmt_cop(resp["ingreso_mediana"])}</div>'
-         f'<div class="rs-r">Rango del 80%: {fmt_cop(bajo)} – {fmt_cop(alto)}</div>'
-         f'<div class="sv-h">Pesos nominales de 2025. El modelo tiende a subestimar los ingresos altos; por eso el rango acompaña siempre al valor central.</div></div></div>')
+    med = resp["ingreso_mediana"]
+    tope = alto * 1.12
+    pos = lambda v: max(0.0, min(100.0, v / tope * 100))
+    base_f, base_i = resp.get("base_formal"), resp.get("base_ingreso")
+    veredicto = "Empleo formal probable" if p >= 0.5 else "Empleo informal más probable"
+    marca_base = f'<span class="rg-base" style="left:{base_f * 100:.1f}%"></span>' if base_f is not None else ""
+    c1, c2 = st.columns(2, gap="medium")
+    with c1, st.container(key="card_res_formal"):
+        html(f'<div class="rs-l">Probabilidad de empleo formal pleno</div>'
+             f'<div class="rs-v" style="color:{PRIMARY}">{fmt_pct(p)}</div>'
+             f'<div class="rs-bar"><span style="width:{p * 100:.1f}%"></span>{marca_base}</div>'
+             f'<div class="rs-foot"><b>{veredicto}</b>'
+             + (f'<span>Promedio del mercado: {fmt_pct(base_f)}</span>' if base_f is not None else "") + '</div>')
+    with c2, st.container(key="card_res_ingreso"):
+        html(f'<div class="rs-l">Ingreso laboral mensual típico (mediana)</div>'
+             f'<div class="rs-v" style="color:{ACCENT_TEXT}">{fmt_cop(med)}</div>'
+             f'<div class="rg"><span class="rg-fill" style="left:{pos(bajo):.1f}%;width:{pos(alto) - pos(bajo):.1f}%"></span>'
+             f'<span class="rg-dot" style="left:{pos(med):.1f}%"></span></div>'
+             f'<div class="rg-lab"><span>{fmt_cop(bajo)}</span><span>Rango probable del 80%</span><span>{fmt_cop(alto)}</span></div>'
+             + (f'<div class="rs-foot"><span>Ingreso promedio de un perfil medio: {fmt_cop(base_i)}</span></div>' if base_i else ""))
+    with c1, st.container(key="card_fx_formal"):
+        html(lista_factores("Qué pesa en tu probabilidad de empleo formal", resp.get("det_formal", [])[:5], "pp"))
+    with c2, st.container(key="card_fx_ingreso"):
+        html(lista_factores("Qué pesa en tu ingreso estimado", resp.get("det_ingreso", [])[:5], "%"))
     for i in resp.get("advertencias", []):
         aviso(dict(tipo="advertencia", msg=MENSAJES_REGLA.get(i, i)))
-    if resp.get("factores_ingreso") or resp.get("factores_formal"):
-        lis = lambda xs: "".join(f"<li>{escape(x)}</li>" for x in xs)
-        html('<div class="rs-fx"><div><div class="rs-l">Qué pesa en tu ingreso estimado</div><ul>' + lis(resp.get("factores_ingreso", [])) + '</ul></div>'
-             '<div><div class="rs-l">Qué pesa en tu probabilidad de empleo formal</div><ul>' + lis(resp.get("factores_formal", [])) + '</ul></div></div>'
-             '<div class="sv-h">Son estimaciones estadísticas de personas con un perfil similar (GEIH 2023-2025), no garantías ni relaciones causales.</div>')
+    html('<div class="sv-h">Estimaciones estadísticas de personas con un perfil similar (GEIH 2023-2025), no garantías ni relaciones causales. '
+         'Los porcentajes comparan tu perfil con el perfil promedio. Pesos nominales de 2025; el modelo tiende a subestimar los ingresos altos. La brecha por sexo es una diferencia observada en el mercado, no algo que dependa de ti.</div>')
 
 
 def ir_vista(vista, paso=None):
@@ -1931,10 +2013,16 @@ def pagina_modelo(df_raw):
     subs = {"preguntas": "Responde unas preguntas sobre tu perfil. Las vamos haciendo de a una.",
             "resumen": "Confirma que todo está bien antes de predecir.",
             "resultado": "Probabilidad de empleo formal e ingreso laboral estimado para tu perfil."}
-    encabezado("Modelo predictivo", subs[vista])
-    pasos_vista = [("preguntas", "1  Preguntas"), ("resumen", "2  Resumen"), ("resultado", "3  Resultado")]
-    html('<div class="mv-tabs">' + "".join(f'<span class="{"on" if k == vista else ""}">{n}</span>' for k, n in pasos_vista) + '</div>')
-    _, centro, _ = st.columns([0.2, 3.6, 0.2])
+    pasos_vista = [("preguntas", "Preguntas"), ("resumen", "Resumen"), ("resultado", "Resultado")]
+    orden = [k for k, _ in pasos_vista]
+    h1, h2 = st.columns([1.3, 1.7], vertical_alignment="center", gap="small")
+    with h1:
+        encabezado("Modelo predictivo", subs[vista])
+    with h2:
+        html('<div class="mv-steps">' + "".join(
+            f'<div class="mv-s {"on" if k == vista else "done" if orden.index(k) < orden.index(vista) else ""}"><i>{"✓" if orden.index(k) < orden.index(vista) else n_}</i>{n}</div>'
+            for n_, (k, n) in enumerate(pasos_vista, 1)) + '</div>')
+    centro = st.container()
 
     with centro:
         if vista == "preguntas":
@@ -1946,8 +2034,8 @@ def pagina_modelo(df_raw):
                 with st.container(key="sv_split"):
                   izq, der = st.columns([1, 1.9], gap="large")
                 with izq:
-                    html(f'<div class="sv-steps">{segmentos}</div>')
-                    html(f'<div><div class="sv-title">{titular}</div><div class="sv-lead">{intro}</div></div>')
+                    html(f'<div><div class="sv-title" style="margin-top:0">{titular}</div><div class="sv-lead">{intro}</div></div>')
+                    html(f'<div class="sv-steps" style="margin:14px 0 8px">{segmentos}</div>')
                     cvc = ss.get("m_cv_campos")
                     if cvc:
                         editar = ss.get("m_editar_todo", False)
@@ -1980,27 +2068,32 @@ def pagina_modelo(df_raw):
                             else:
                                 st.button("Ver resumen  →", key="sv_resumen_btn", on_click=ir_vista, args=("resumen",))
         elif vista == "resumen":
+            cvset = set(ss.get("m_cv_campos", []))
             with st.container(key="card_perfil"):
-                grupos = ""
-                cvset = set(ss.get("m_cv_campos", []))
-                for nombre, _, _, campos in PASOS:
-                    filas = "".join(
-                        f'<div class="pf-row"><span>{ETIQUETAS[c]}</span><b>{escape(mostrar_valor(c, p[c]))}'
-                        f'{"<i>auto</i>" if r[c] is None else "<i>CV</i>" if c in cvset else ""}</b></div>' for c in campos)
-                    grupos += f'<div class="pf-box"><div class="pf-g">{nombre}</div>{filas}</div>'
-                html(f'<div class="card-head"><div class="eyebrow">Tu perfil</div><div class="card-sub" style="margin:0">{len(CAMPOS)} respuestas</div></div><div class="pf-grid">{grupos}</div>')
+                html(f'<div class="card-head"><div><div class="card-title">Tu perfil</div>'
+                     f'<div class="card-sub">{len(CAMPOS)} de {len(CAMPOS)} respuestas listas'
+                     + (f' · {len(cvset)} completadas con tu hoja de vida' if cvset else '') + '</div></div></div>')
+                with st.container(key="pf_row"):
+                    cols = st.columns(len(PASOS), gap="small")
+                    for i, (nombre, _, _, campos) in enumerate(PASOS):
+                        with cols[i], st.container(key=f"card_pfg_{i}"):
+                            filas = "".join(
+                                f'<div class="pf2"><div class="pf2-l">{ETIQUETAS[c]}'
+                                f'{"<i>auto</i>" if r[c] is None else "<i>CV</i>" if c in cvset else ""}</div>'
+                                f'<div class="pf2-v">{escape(mostrar_valor(c, p[c]))}</div></div>' for c in campos)
+                            html(f'<div class="pf2-g"><b>{i + 1}</b>{nombre}</div>{filas}')
+                            st.button("Editar", key=f"pf_edit_{i}", type="tertiary", icon=":material/edit:", on_click=editar_paso, args=(i,))
                 for m in avisos:
                     aviso(m)
                 payload = {c: p[c] for c in CAMPOS}
-                c1, c2 = st.columns(2, vertical_alignment="center")
-                with c1, st.container(key="svback"):
-                    st.button("←  Editar respuestas", key="sv_editar_btn", on_click=editar_respuestas)
-                with c2, st.container(key="predecir_modelo"):
-                    st.button("Predecir", key="btn_predecir_modelo", on_click=predecir_y_mostrar, args=(payload,))
+                a1, a2 = st.columns([1, 1], vertical_alignment="center")
+                with a1, st.container(key="svback"):
+                    html('<div class="sv-h" style="margin:0">Revisa que todo esté bien. Con estos datos el modelo estima tu ingreso y tu probabilidad de empleo formal.</div>')
+                with a2, st.container(key="predecir_modelo"):
+                    st.button("Predecir mi resultado  →", key="btn_predecir_modelo", on_click=predecir_y_mostrar, args=(payload,))
         else:
             res = ss["m_resultado"]
-            with st.container(key="card_resultado"):
-                html('<div class="eyebrow">Resultado</div>')
+            with st.container(key="resultado_wrap"):
                 if res["respuesta"] is not None and res["respuesta"].get("errores"):
                     for e in res["respuesta"]["errores"]:
                         aviso(dict(tipo="bloqueo", msg=e))
@@ -2013,7 +2106,7 @@ def pagina_modelo(df_raw):
                     resultado_modelo(res["respuesta"])
                 c1, c2 = st.columns(2, vertical_alignment="center")
                 with c1, st.container(key="svback"):
-                    st.button("←  Ver resumen", key="sv_vresumen_btn", on_click=ir_vista, args=("resumen",))
+                    st.button("←  Volver al resumen", key="sv_vresumen_btn", on_click=ir_vista, args=("resumen",))
                 with c2, st.container(key="svnext"):
                     st.button("Nueva predicción", key="sv_reiniciar", on_click=reiniciar_encuesta)
     pie()
