@@ -1332,11 +1332,11 @@ def ia_configurada():
     return bool(_secreto("IA_API_KEY") or _secreto("GROQ_API_KEY"))
 
 
-def _pedir(base, modelo, clave, mensajes, herramientas=None):
+def _pedir(base, modelo, clave, mensajes, herramientas=None, max_salida=900):
     """Una llamada a una API compatible con OpenAI. Reintenta ante saturación (503/429). Devuelve (mensaje, error)."""
     import urllib.error
     import urllib.request
-    cuerpo = {"model": modelo, "temperature": 0.3, "max_tokens": 900, "messages": mensajes}
+    cuerpo = {"model": modelo, "temperature": 0.3, "max_tokens": max_salida, "messages": mensajes}
     if herramientas:
         cuerpo["tools"] = herramientas
     if modelo.startswith("openai/gpt-oss") or "gemini" in modelo:
@@ -1369,11 +1369,11 @@ def _pedir(base, modelo, clave, mensajes, herramientas=None):
     return None, err
 
 
-def _conversar(base, modelo, clave, sistema, mensajes, herramientas, ejecutar):
+def _conversar(base, modelo, clave, sistema, mensajes, herramientas, ejecutar, max_salida=900):
     """Conversa con el modelo; si pide usar la herramienta de datos, la ejecuta y le devuelve el resultado (hasta 5 rondas)."""
     msgs = [{"role": "system", "content": sistema}] + list(mensajes)
     for _ in range(5):
-        m, err = _pedir(base, modelo, clave, msgs, herramientas)
+        m, err = _pedir(base, modelo, clave, msgs, herramientas, max_salida)
         if m is None:
             return None, err
         llamadas = m.get("tool_calls") or []
@@ -1391,7 +1391,7 @@ def _conversar(base, modelo, clave, sistema, mensajes, herramientas, ejecutar):
     return None, "demasiadas consultas seguidas"
 
 
-def llamar_ia(sistema, mensajes, herramientas=None, ejecutar=None):
+def llamar_ia(sistema, mensajes, herramientas=None, ejecutar=None, max_salida=900):
     """IA gratuita por API compatible con OpenAI. Principal: IA_API_KEY / IA_BASE_URL / IA_MODEL (p. ej. Gemini).
     Respaldo automático: GROQ_API_KEY (gpt-oss-120b). IA_PRIMERO = "groq" invierte el orden. Devuelve texto o None."""
     intentos = []
@@ -1403,9 +1403,9 @@ def llamar_ia(sistema, mensajes, herramientas=None, ejecutar=None):
         intentos.reverse()
     errores = []
     for base, modelo, clave in intentos:
-        texto, err = _conversar(base, modelo, clave, sistema, mensajes, herramientas, ejecutar)
+        texto, err = _conversar(base, modelo, clave, sistema, mensajes, herramientas, ejecutar, max_salida)
         if texto is None and herramientas:      # si el proveedor no admite herramientas, reintenta sin ellas
-            texto, err2 = _conversar(base, modelo, clave, sistema, mensajes, None, None)
+            texto, err2 = _conversar(base, modelo, clave, sistema, mensajes, None, None, max_salida)
             err = err2 or err
         if texto:
             return texto
@@ -2390,14 +2390,49 @@ def _norm(t):
     return unicodedata.normalize("NFKD", str(t)).encode("ascii", "ignore").decode().lower()
 
 
+def leer_pdf(datos):
+    """Texto de un PDF: primero pypdf, luego PyMuPDF y, si es una imagen o un diseño sin texto, lectura con IA de visión (OCR)."""
+    texto = ""
+    try:
+        from pypdf import PdfReader
+        texto = "\n".join((pg.extract_text() or "") for pg in PdfReader(io.BytesIO(datos)).pages)
+    except Exception:
+        pass
+    if len(texto.strip()) >= 80:
+        return texto
+    try:
+        try:
+            import pymupdf as fitz
+        except ImportError:
+            import fitz
+        doc = fitz.open(stream=datos, filetype="pdf")
+        t2 = "\n".join(p.get_text() for p in doc)
+        if len(t2.strip()) >= 80:
+            return t2
+        if ia_configurada():
+            imgs = [base64.b64encode(p.get_pixmap(matrix=fitz.Matrix(1.7, 1.7)).tobytes("png")).decode() for p in list(doc)[:3]]
+            t3 = ocr_con_ia(imgs)
+            if t3:
+                return t3
+    except Exception:
+        pass
+    return texto
+
+
+def ocr_con_ia(imagenes_b64):
+    """Transcribe una hoja de vida en imágenes con un modelo de visión (Gemini). Devuelve '' si no es posible."""
+    contenido = [{"type": "text", "text": "Transcribe fielmente todo el texto de esta hoja de vida (nombre, fecha de nacimiento, ciudad, estudios, experiencia, cargos, empresas, fechas). Solo el texto, sin comentarios."}]
+    contenido += [{"type": "image_url", "image_url": {"url": "data:image/png;base64," + b}} for b in imagenes_b64]
+    return llamar_ia("Eres un OCR preciso de documentos en español.", [{"role": "user", "content": contenido}], max_salida=4000) or ""
+
+
 def leer_archivo(archivo):
     """Texto de un PDF, Word (.docx) o .txt subido por el usuario. Devuelve '' si no se puede leer."""
     nombre = archivo.name.lower()
     datos = archivo.getvalue()
     try:
         if nombre.endswith(".pdf"):
-            from pypdf import PdfReader
-            return "\n".join((pg.extract_text() or "") for pg in PdfReader(io.BytesIO(datos)).pages)
+            return leer_pdf(datos)
         if nombre.endswith(".docx"):
             from docx import Document
             doc = Document(io.BytesIO(datos))
@@ -2596,10 +2631,9 @@ def extraer_con_ia(texto, cat, sectores):
     """Lectura con IA (opcional). Solo se usa si hay ANTHROPIC_API_KEY (en st.secrets o variable de entorno) y el paquete 'anthropic'.
     Devuelve (datos, supuestos) o None si no está disponible o falla; en ese caso se usa la lectura por reglas."""
     clave = _clave_ia()
-    if not clave:
+    if not clave and not ia_configurada():
         return None
     try:
-        import anthropic
         opciones = {
             "sexo": cat["sexo"], "estado_civil": cat["estado_civil"], "nivel_educativo": cat["nivel"], "asiste_institucion_educ": ["Sí", "No"],
             "area_titulo_campo_amplio": AREAS + [SIN_TITULO], "departamento": cat["departamento"], "zona": ["Cabecera", "Resto"],
@@ -2610,10 +2644,14 @@ def extraer_con_ia(texto, cat, sectores):
             f"{date.today().isoformat()}), minutos_desplazamiento (entero 0-300) y estas, cuyo valor debe ser EXACTAMENTE una de las opciones dadas: "
             + json.dumps(opciones, ensure_ascii=False) + ". Para oficio_gran_grupo y sector_economico_seccion usa el cargo y la empresa más recientes. "
             "area_titulo_campo_amplio solo aplica si el nivel educativo más alto es superior o posgrado (usa 'Sin título' si aún no se gradúa).")
-        cliente = anthropic.Anthropic(api_key=clave)
-        r = cliente.messages.create(model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5-5"), max_tokens=1500, system=instrucciones,
-                                    messages=[{"role": "user", "content": "Hoja de vida:\n\n" + texto[:12000]}])
-        bruto = "".join(b.text for b in r.content if getattr(b, "type", "") == "text")
+        if clave:
+            import anthropic
+            cliente = anthropic.Anthropic(api_key=clave)
+            r = cliente.messages.create(model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5-5"), max_tokens=1500, system=instrucciones,
+                                        messages=[{"role": "user", "content": "Hoja de vida:\n\n" + texto[:12000]}])
+            bruto = "".join(b.text for b in r.content if getattr(b, "type", "") == "text")
+        else:                                   # IA gratuita configurada (Gemini / Groq)
+            bruto = llamar_ia(instrucciones, [{"role": "user", "content": "Hoja de vida:\n\n" + texto[:12000]}], max_salida=2500) or ""
         datos = json.loads(bruto[bruto.index("{"): bruto.rindex("}") + 1])
     except Exception:
         return None
@@ -2687,7 +2725,7 @@ def procesar_cv(nombre, texto):
     ss.chat.append({"role": "user", "content": f"Adjunté mi hoja de vida: {nombre}"})
     if len(texto.strip()) < 80:
         ss.chat.append({"role": "assistant", "content": "No pude leer texto en ese archivo (puede ser una imagen escaneada). "
-                        "Prueba con un PDF o Word con texto seleccionable, o responde la encuesta directamente."})
+                        "Prueba con otro PDF o con un Word, o pega el texto de tu hoja de vida en el chat. También puedes responder la encuesta directamente."})
         return False
     datos, supuestos, motor = extraer_cv(texto)
     if not datos:

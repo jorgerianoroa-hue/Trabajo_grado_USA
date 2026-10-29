@@ -1,5 +1,10 @@
-streamlit>=1.38
-pandas>=2.0
-plotly>=5.20
-lightgbm>=4.0,<5
+streamlit>=1.50
+pandas
+pyarrow
+plotly
 numpy
+lightgbm>=4.0,<5
+pypdf
+pymupdf
+python-docx
+anthropic
