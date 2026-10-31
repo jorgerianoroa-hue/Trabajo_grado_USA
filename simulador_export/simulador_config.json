@@ -1,11 +1,11 @@
 {
-  "descripcion": "Configuración del simulador de la tesis (LightGBM ingreso + formalidad), reentrenados con el 100% de la base GEIH 2023-2025 de ocupados dependientes.",
-  "generado": "2026-10-21 20:37:25",
+  "descripcion": "Configuración del simulador de la tesis (LightGBM ingreso + formalidad), reentrenados con el 100% de la base GEIH 2023-2025 de ocupados dependientes. SIN tipo_contrato (31 oct 2026).",
+  "generado": "2026-10-31 17:42:06",
   "lightgbm_r": "4.6.0",
   "n_filas_entrenamiento": 541539,
   "anio_ref": "2025",
   "codificacion": "Categóricas: código = posición 1-based del texto en 'niveles' (igual que data.matrix en R), como número real. Numéricas tal cual. anio se fija en anio_ref.",
-  "variables_formulario": ["edad", "sexo", "estado_civil", "sabe_leer_escribir", "asiste_institucion_educ", "nivel_educativo", "area_titulo_campo_amplio", "departamento", "zona", "tipo_contrato", "lugar_trabajo", "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "minutos_desplazamiento"],
+  "variables_formulario": ["edad", "sexo", "estado_civil", "sabe_leer_escribir", "asiste_institucion_educ", "nivel_educativo", "area_titulo_campo_amplio", "departamento", "zona", "lugar_trabajo", "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "minutos_desplazamiento"],
   "variables_numericas": ["edad", "minutos_desplazamiento"],
   "niveles": {
     "sexo": ["Femenino", "Masculino"],
@@ -16,7 +16,6 @@
     "area_titulo_campo_amplio": ["00 PROGRAMAS Y CERTIFICACIONES GENÉRICOS", "01 EDUCACIÓN", "02 ARTES Y HUMANIDADES", "03 CIENCIAS SOCIALES, PERIODISMO E INFORMACIÓN", "04 ADMINISTRACIÓN DE EMPRESAS Y DERECHO", "05 CIENCIAS NATURALES, MATEMÁTICAS Y ESTADÍSTICA", "06 TECNOLOGÍAS DE LA INFORMACIÓN Y LA COMUNICACIÓN (TIC)", "07 INGENIERÍA, INDUSTRIA Y CONSTRUCCIÓN", "08 AGROPECUARIO, SILVICULTURA, PESCA Y VETERINARIA", "09 SALUD Y BIENESTAR", "10 SERVICIOS", "Sin título"],
     "departamento": ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bogotá D.C.", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "San Andrés", "Santander", "Sucre", "Tolima", "Valle del Cauca", "Vaupés", "Vichada"],
     "zona": ["Cabecera", "Resto"],
-    "tipo_contrato": ["Fijo", "Indefinido", "No sabe", "Sin contrato escrito"],
     "lugar_trabajo": ["De puerta en puerta", "En el campo / mar / río", "En kiosco / caseta", "En la calle (ambulante)", "En mina o cantera", "En obra de construcción", "En otras viviendas", "En vehículo", "En vivienda propia", "Local fijo / oficina / fábrica", "Otro"],
     "medio_consiguio_empleo": ["Agencia / bolsa de empleo / SENA / SPE", "Avisos clasificados", "Convocatoria", "Envió hoja de vida a empresas", "Familiares / amigos / colegas", "Otro"],
     "sector_economico_seccion": ["A - AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA", "B - EXPLOTACIÓN DE MINAS Y CANTERAS", "C - INDUSTRIAS MANUFACTURERAS", "D - SUMINISTRO DE ELECTRICIDAD, GAS, VAPOR Y AIRE ACONDICIONADO", "E - DISTRIBUCIÓN DE AGUA; EVACUACIÓN Y TRATAMIENTO DE AGUAS RESIDUALES, GESTIÓN DE DESECHOS Y ACTIVIDADES DE SANEAMIENTO AMBIENTAL", "F - CONSTRUCCIÓN", "G - COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS", "H - TRANSPORTE Y ALMACENAMIENTO", "I - ALOJAMIENTO Y SERVICIOS DE COMIDA", "J - INFORMACIÓN Y COMUNICACIONES", "K - ACTIVIDADES FINANCIERAS Y DE SEGUROS", "L - ACTIVIDADES INMOBILIARIAS", "M - ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS", "N - ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO", "O - ADMINISTRACIÓN PÚBLICA Y DEFENSA; PLANES DE SEGURIDAD SOCIAL DE AFILIACIÓN OBLIGATORIA", "P - EDUCACIÓN", "Q - ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL", "R - ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN", "S - OTRAS ACTIVIDADES DE SERVICIOS", "Sin información", "T - ACTIVIDADES DE LOS HOGARES INDIVIDUALES EN CALIDAD DE EMPLEADORES; ACTIVIDADES NO DIFERENCIADAS DE LOS HOGARES INDIVIDUALES COMO PRODUCTORES DE BIENES Y SERVICIOS PARA USO PROPIO", "U - ACTIVIDADES DE ORGANIZACIONES Y ENTIDADES EXTRATERRITORIALES"],
@@ -26,12 +25,12 @@
   "modelos": {
     "ingreso": {
       "archivo": "lgbm_ingreso_full.txt",
-      "x_vars": ["edad", "sexo", "estado_civil", "sabe_leer_escribir", "asiste_institucion_educ", "nivel_educativo", "area_titulo_campo_amplio", "departamento", "zona", "tipo_contrato", "lugar_trabajo", "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "minutos_desplazamiento", "anio"],
-      "cat_vars": ["sexo", "estado_civil", "sabe_leer_escribir", "asiste_institucion_educ", "nivel_educativo", "area_titulo_campo_amplio", "departamento", "zona", "tipo_contrato", "lugar_trabajo", "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "anio"],
-      "nrounds": 296,
+      "x_vars": ["edad", "sexo", "estado_civil", "sabe_leer_escribir", "asiste_institucion_educ", "nivel_educativo", "area_titulo_campo_amplio", "departamento", "zona", "lugar_trabajo", "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "minutos_desplazamiento", "anio"],
+      "cat_vars": ["sexo", "estado_civil", "sabe_leer_escribir", "asiste_institucion_educ", "nivel_educativo", "area_titulo_campo_amplio", "departamento", "zona", "lugar_trabajo", "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "anio"],
+      "nrounds": 321,
       "num_leaves": 255,
       "min_data_in_leaf": 50,
-      "target": "log1p(ingreso_laboral_total). Mediana (puntual) = expm1(pred_log).",
+      "target": "log1p(ingreso_laboral_total) | SIN tipo_contrato. Mediana (puntual) = expm1(pred_log).",
       "grupos": {
         "niveles_posgrado": ["Especialización", "Maestría", "Doctorado"],
         "deptos_gran_ciudad": ["Bogotá D.C.", "Antioquia", "Valle del Cauca", "Atlántico"],
@@ -42,37 +41,37 @@
         "metodo": "p10 = expm1(pred_log + q10_grupo); p90 = expm1(pred_log + q90_grupo); cuantiles de residuos OOF (train 70%)",
         "cuantiles_por_grupo": {
           "Posgrado gran ciudad": {
-            "q10": -0.603582169053335,
-            "q90": 0.638542179587998
+            "q10": -0.61530546192932,
+            "q90": 0.650726995487016
           },
           "Posgrado resto": {
-            "q10": -0.525490176927765,
-            "q90": 0.517358781024996
+            "q10": -0.536451609521955,
+            "q90": 0.526952031295739
           },
           "Sin posgrado": {
-            "q10": -0.386199414902716,
-            "q90": 0.435183165412971
+            "q10": -0.423727313455447,
+            "q90": 0.437524193343186
           }
         }
       },
       "smearing": {
         "metodo": "Duan sobre residuos OOF en log1p: media = exp(pred_log) * S_grupo - 1",
-        "global": 1.08505126532931,
+        "global": 1.09095916436562,
         "por_grupo": {
-          "Posgrado gran ciudad": 1.16531498754221,
-          "Posgrado resto": 1.11273362354524,
-          "Sin posgrado": 1.08159117631642
+          "Posgrado gran ciudad": 1.17526948305579,
+          "Posgrado resto": 1.11533414462249,
+          "Sin posgrado": 1.08763207646569
         }
       }
     },
     "formalidad": {
       "archivo": "lgbm_formalidad_full.txt",
-      "x_vars": ["edad", "estado_civil", "asiste_institucion_educ", "nivel_educativo", "area_titulo_campo_amplio", "departamento", "zona", "tipo_contrato", "lugar_trabajo", "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "minutos_desplazamiento", "anio"],
-      "cat_vars": ["estado_civil", "asiste_institucion_educ", "nivel_educativo", "area_titulo_campo_amplio", "departamento", "zona", "tipo_contrato", "lugar_trabajo", "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "anio"],
-      "nrounds": 504,
+      "x_vars": ["edad", "estado_civil", "asiste_institucion_educ", "nivel_educativo", "area_titulo_campo_amplio", "departamento", "zona", "lugar_trabajo", "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "minutos_desplazamiento", "anio"],
+      "cat_vars": ["estado_civil", "asiste_institucion_educ", "nivel_educativo", "area_titulo_campo_amplio", "departamento", "zona", "lugar_trabajo", "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "anio"],
+      "nrounds": 924,
       "num_leaves": 63,
       "min_data_in_leaf": 50,
-      "target": "empleo_formal_pleno corregido (pensionado cuenta como cotizante). predict = probabilidad.",
+      "target": "empleo_formal_pleno corregido (pensionado cuenta como cotizante) | SIN tipo_contrato. predict = probabilidad.",
       "umbral": 0.5
     }
   },
@@ -338,12 +337,6 @@
       "zona": {
         "Cabecera": 505223,
         "Resto": 36316
-      },
-      "tipo_contrato": {
-        "Fijo": 97042,
-        "Indefinido": 274909,
-        "No sabe": 214,
-        "Sin contrato escrito": 169374
       },
       "lugar_trabajo": {
         "De puerta en puerta": 8227,
@@ -1405,59 +1398,6 @@
             "PROFESIONALES, CIENTÍFICOS E INTELECTUALES": 43393,
             "TÉCNICOS Y PROFESIONALES DEL NIVEL MEDIO": 14134,
             "TRABAJADORES DE LOS SERVICIOS Y VENDEDORES DE COMERCIOS Y MERCADOS": 14433
-          }
-        }
-      },
-      "contrato_x_oficio": {
-        "var_a": "tipo_contrato",
-        "var_b": "oficio_gran_grupo",
-        "conteos": {
-          "Fijo": {
-            "AGRICULTORES Y TRABAJADORES CALIFICADOS AGROPECUARIOS, FORESTALES Y PESQUEROS": 683,
-            "DIRECTORES Y GERENTES": 4013,
-            "FUERZAS MILITARES": 31,
-            "OCUPACIONES ELEMENTALES": 14983,
-            "OFICIALES, OPERARIOS, ARTESANOS Y OFICIOS RELACIONADOS": 6631,
-            "OPERADORES DE INSTALACIONES Y MÁQUINAS Y ENSAMBLADORES": 7044,
-            "PERSONAL DE APOYO ADMINISTRATIVO": 13359,
-            "PROFESIONALES, CIENTÍFICOS E INTELECTUALES": 16347,
-            "TÉCNICOS Y PROFESIONALES DEL NIVEL MEDIO": 8752,
-            "TRABAJADORES DE LOS SERVICIOS Y VENDEDORES DE COMERCIOS Y MERCADOS": 25199
-          },
-          "Indefinido": {
-            "AGRICULTORES Y TRABAJADORES CALIFICADOS AGROPECUARIOS, FORESTALES Y PESQUEROS": 1774,
-            "DIRECTORES Y GERENTES": 21824,
-            "FUERZAS MILITARES": 1232,
-            "OCUPACIONES ELEMENTALES": 28641,
-            "OFICIALES, OPERARIOS, ARTESANOS Y OFICIOS RELACIONADOS": 16745,
-            "OPERADORES DE INSTALACIONES Y MÁQUINAS Y ENSAMBLADORES": 18810,
-            "PERSONAL DE APOYO ADMINISTRATIVO": 38799,
-            "PROFESIONALES, CIENTÍFICOS E INTELECTUALES": 59082,
-            "TÉCNICOS Y PROFESIONALES DEL NIVEL MEDIO": 30651,
-            "TRABAJADORES DE LOS SERVICIOS Y VENDEDORES DE COMERCIOS Y MERCADOS": 57351
-          },
-          "No sabe": {
-            "AGRICULTORES Y TRABAJADORES CALIFICADOS AGROPECUARIOS, FORESTALES Y PESQUEROS": 4,
-            "DIRECTORES Y GERENTES": 8,
-            "OCUPACIONES ELEMENTALES": 43,
-            "OFICIALES, OPERARIOS, ARTESANOS Y OFICIOS RELACIONADOS": 19,
-            "OPERADORES DE INSTALACIONES Y MÁQUINAS Y ENSAMBLADORES": 16,
-            "PERSONAL DE APOYO ADMINISTRATIVO": 28,
-            "PROFESIONALES, CIENTÍFICOS E INTELECTUALES": 25,
-            "TÉCNICOS Y PROFESIONALES DEL NIVEL MEDIO": 15,
-            "TRABAJADORES DE LOS SERVICIOS Y VENDEDORES DE COMERCIOS Y MERCADOS": 56
-          },
-          "Sin contrato escrito": {
-            "AGRICULTORES Y TRABAJADORES CALIFICADOS AGROPECUARIOS, FORESTALES Y PESQUEROS": 1912,
-            "DIRECTORES Y GERENTES": 8317,
-            "FUERZAS MILITARES": 1,
-            "OCUPACIONES ELEMENTALES": 60835,
-            "OFICIALES, OPERARIOS, ARTESANOS Y OFICIOS RELACIONADOS": 18520,
-            "OPERADORES DE INSTALACIONES Y MÁQUINAS Y ENSAMBLADORES": 9129,
-            "PERSONAL DE APOYO ADMINISTRATIVO": 6136,
-            "PROFESIONALES, CIENTÍFICOS E INTELECTUALES": 3323,
-            "TÉCNICOS Y PROFESIONALES DEL NIVEL MEDIO": 4121,
-            "TRABAJADORES DE LOS SERVICIOS Y VENDEDORES DE COMERCIOS Y MERCADOS": 57080
           }
         }
       },
