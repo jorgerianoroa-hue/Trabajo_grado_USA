@@ -1,8 +1,9 @@
 """
 simulador.py — Simulador de la tesis: ingreso laboral y probabilidad de empleo formal.
 
-Usa los dos LightGBM exportados por "Modelos R/Exportar modelos simulador.R"
-(reentrenados con el 100% de la base GEIH 2023-2025) y el archivo
+Usa los dos LightGBM SIN tipo_contrato exportados por
+"Modelos R/Exportar modelos simulador Sin Contrato.R" (31 oct 2026; reentrenados con
+el 100% de la base GEIH 2023-2025; formulario de 14 preguntas) y el archivo
 simulador_config.json (niveles -> código, cuantiles por grupo, smearing,
 anio_ref, umbral y límites de validación).
 
@@ -15,7 +16,7 @@ Uso desde el front:
         "sabe_leer_escribir": "Sí", "asiste_institucion_educ": "No",
         "nivel_educativo": "Universitaria",
         "area_titulo_campo_amplio": "04 ADMINISTRACIÓN DE EMPRESAS Y DERECHO",
-        "departamento": "Bogotá D.C.", "zona": "Cabecera", "tipo_contrato": "Indefinido",
+        "departamento": "Bogotá D.C.", "zona": "Cabecera",
         "lugar_trabajo": "Local fijo / oficina / fábrica",
         "medio_consiguio_empleo": "Envió hoja de vida a empresas",
         "sector_economico_seccion": "K - ACTIVIDADES FINANCIERAS Y DE SEGUROS",
@@ -63,7 +64,6 @@ ETIQUETAS = {
     "area_titulo_campo_amplio": "Área del título",
     "departamento": "Departamento",
     "zona": "Zona",
-    "tipo_contrato": "Tipo de contrato",
     "lugar_trabajo": "Lugar de trabajo",
     "medio_consiguio_empleo": "Medio de búsqueda de empleo",
     "sector_economico_seccion": "Sector económico",
@@ -104,8 +104,9 @@ def _dir_por_defecto() -> Path:
     if env:
         return Path(env)
     aqui = Path(__file__).resolve().parent
-    for cand in (aqui / "simulador_export", aqui.parent / "Modelos R" / "simulador_export",
-                 aqui / "Modelos R" / "simulador_export"):
+    # Primero la exportación SIN contrato (31 oct 2026); "simulador_export" junto al script es la carpeta de la entrega/repo.
+    for cand in (aqui / "simulador_export", aqui.parent / "Modelos R" / "simulador_export_sin_contrato",
+                 aqui / "Modelos R" / "simulador_export_sin_contrato"):
         if (cand / "simulador_config.json").exists():
             return cand
     raise FileNotFoundError("No encontré simulador_config.json. Pasa la carpeta del export o define SIMULADOR_EXPORT_DIR.")
@@ -510,8 +511,7 @@ def probar(dir_export: str | Path | None = None, tol_rel: float = 1e-6, tol_abs:
         print("  -", m)
 
     # Demostración de validación: perfil incoherente (18 años + universitaria + directivo)
-    raro = dict(p0, edad=18, nivel_educativo="Universitaria", oficio_gran_grupo="DIRECTORES Y GERENTES",
-                tipo_contrato="Indefinido")
+    raro = dict(p0, edad=18, nivel_educativo="Universitaria", oficio_gran_grupo="DIRECTORES Y GERENTES")
     vr = sim.validar_respuestas(raro)
     print("\nPerfil incoherente (18 años, Universitaria, Directores y gerentes):",
           "BLOQUEADO" if not vr["ok"] else "permitido con advertencias")
