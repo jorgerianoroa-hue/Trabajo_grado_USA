@@ -1511,7 +1511,7 @@ DESCRIPCION_PAGINAS = {
     "inicio": "la portada con el mapa de Colombia y los accesos a cada análisis",
     "formalidad": "el análisis descriptivo de formalidad laboral (porcentaje de trabajo formal vs no formal por departamento, tiempo, educación, demografía, contrato, sector y oficio)",
     "ingresos": "el análisis descriptivo de ingresos laborales (promedio y mediana por departamento, tiempo, educación, demografía, contrato, sector y oficio)",
-    "modelo": "el modelo predictivo: una encuesta de 15 preguntas que estima la probabilidad de empleo formal y el ingreso mensual típico de un perfil",
+    "modelo": "el modelo predictivo: una encuesta de 14 preguntas que estima la probabilidad de empleo formal y el ingreso mensual típico de un perfil",
 }
 
 
@@ -1744,7 +1744,7 @@ def pagina_ingresos(df_raw):
 
 
 # ---------------------------------------------------------------------------
-# MODELO PREDICTIVO UNIFICADO: encuesta de 15 variables
+# MODELO PREDICTIVO UNIFICADO: encuesta de 14 variables (sin tipo_contrato desde el 31 oct 2026)
 # Un solo formulario alimenta los dos modelos (probabilidad de empleo formal e ingreso laboral).
 # Valores y reglas: "Especificación de variables y reglas de validación". Los valores enviados
 # deben coincidir exactamente con los de la base; las etiquetas visibles pueden ser más cortas.
@@ -1777,7 +1777,6 @@ DEPARTAMENTOS = [
     "Valle del Cauca", "Vaupés", "Vichada"]
 DEP_SOLO_CABECERA = {"Amazonas", "Arauca", "Casanare", "Guainía", "Guaviare", "Putumayo", "San Andrés", "Vaupés", "Vichada"}  # R-09
 GRAN_CIUDAD = {"Bogotá D.C.", "Antioquia", "Valle del Cauca", "Atlántico"}
-CONTRATOS = ["Indefinido", "Fijo", "Sin contrato escrito"]
 LUGARES = ["Local fijo / oficina / fábrica", "En vivienda propia", "En otras viviendas", "En kiosco / caseta", "En vehículo",
            "De puerta en puerta", "En la calle (ambulante)", "En el campo / mar / río", "En obra de construcción",
            "En mina o cantera", "Otro"]
@@ -1797,17 +1796,17 @@ OFICIOS = {  # valor exacto -> (etiqueta corta, ejemplos). Los ejemplos son orie
     MILITAR: ("Fuerzas militares", "ejército, armada, fuerza aérea"),
 }
 CAMPOS = ["edad", "sexo", "estado_civil", "nivel_educativo", "sabe_leer_escribir", "asiste_institucion_educ",
-          "area_titulo_campo_amplio", "departamento", "zona", "tipo_contrato", "lugar_trabajo",
+          "area_titulo_campo_amplio", "departamento", "zona", "lugar_trabajo",
           "medio_consiguio_empleo", "sector_economico_seccion", "oficio_gran_grupo", "minutos_desplazamiento"]
 CLAVES = {"edad": "m_edad", "sexo": "m_sexo", "estado_civil": "m_civil", "nivel_educativo": "m_nivel",
           "sabe_leer_escribir": "m_leer", "asiste_institucion_educ": "m_estudia", "area_titulo_campo_amplio": "m_area",
-          "departamento": "m_dep", "zona": "m_zona", "tipo_contrato": "m_contrato", "lugar_trabajo": "m_lugar",
+          "departamento": "m_dep", "zona": "m_zona", "lugar_trabajo": "m_lugar",
           "medio_consiguio_empleo": "m_medio", "sector_economico_seccion": "m_sector", "oficio_gran_grupo": "m_oficio",
           "minutos_desplazamiento": "m_min"}
 ETIQUETAS = {"edad": "Edad", "sexo": "Sexo", "estado_civil": "Estado civil", "nivel_educativo": "Nivel educativo",
              "sabe_leer_escribir": "Sabe leer y escribir", "asiste_institucion_educ": "Estudia actualmente",
              "area_titulo_campo_amplio": "Área del título", "departamento": "Departamento", "zona": "Zona",
-             "tipo_contrato": "Contrato", "lugar_trabajo": "Lugar de trabajo", "medio_consiguio_empleo": "Cómo espera conseguir el empleo",
+             "lugar_trabajo": "Lugar de trabajo", "medio_consiguio_empleo": "Cómo espera conseguir el empleo",
              "sector_economico_seccion": "Sector", "oficio_gran_grupo": "Oficio", "minutos_desplazamiento": "Desplazamiento"}
 PASOS = [  # (nombre, titular, introducción, campos que se piden)
     ("Sobre ti", "Cuéntanos sobre ti", "Empecemos por lo básico.", ["edad", "sexo", "estado_civil"]),
@@ -1815,8 +1814,8 @@ PASOS = [  # (nombre, titular, introducción, campos que se piden)
      ["nivel_educativo", "sabe_leer_escribir", "asiste_institucion_educ", "area_titulo_campo_amplio"]),
     ("Ubicación", "¿Dónde quieres trabajar?", "El lugar donde te gustaría conseguir empleo.", ["departamento", "zona"]),
     ("Ocupación", "¿A qué te quieres dedicar?", "Primero el tipo de oficio y luego el sector de la empresa que te interesa.", ["oficio_gran_grupo", "sector_economico_seccion"]),
-    ("Condiciones", "El trabajo que buscas", "Lugar, contrato y desplazamiento que esperas.",
-     ["lugar_trabajo", "tipo_contrato", "medio_consiguio_empleo", "minutos_desplazamiento"]),
+    ("Condiciones", "El trabajo que buscas", "Lugar, medio de búsqueda y desplazamiento que esperas.",
+     ["lugar_trabajo", "medio_consiguio_empleo", "minutos_desplazamiento"]),
 ]
 MENSAJES_REGLA = {  # texto de las advertencias que devuelve el backend por ID
     "R-02": "La edad supera los 75 años: hay pocos casos y el resultado es menos confiable.",
@@ -1884,7 +1883,6 @@ def catalogos_desde_base(df):
         "estado_civil": opciones_base(ESTADOS_CIVILES, col("estado_civil")),
         "nivel": opciones_base(NIVELES, col("nivel_educativo")),
         "departamento": opciones_base(DEPARTAMENTOS, col("departamento")),
-        "contrato": opciones_base(CONTRATOS, col("tipo_contrato")),
         "lugar": opciones_base(LUGARES, col("lugar_trabajo")),
         "oficio": opciones_base(list(OFICIOS), col("oficio_gran_grupo")),
     }
@@ -2165,13 +2163,10 @@ def controles_paso(paso, sectores, sec_o, cat):
             pregunta("¿Dónde te gustaría realizar tu trabajo?")
             st.selectbox("Lugar de trabajo", cat["lugar"], index=None, placeholder="Selecciona el lugar", key="m_lugar",
                          on_change=al_cambiar_lugar, label_visibility="collapsed")
-        if hecho("lugar_trabajo") and ver("tipo_contrato"):
-            pregunta("¿Qué tipo de contrato buscas?", "El que esperas o prefieres.")
-            st.radio("Tipo de contrato", cat["contrato"], index=None, horizontal=True, key="m_contrato", label_visibility="collapsed")
-        if hecho("lugar_trabajo") and hecho("tipo_contrato") and ver("medio_consiguio_empleo"):
+        if hecho("lugar_trabajo") and ver("medio_consiguio_empleo"):
             pregunta("¿Por qué medio piensas conseguir el empleo?")
             st.selectbox("Medio", MEDIOS, index=None, placeholder="Selecciona una opción", key="m_medio", label_visibility="collapsed")
-        if hecho("lugar_trabajo") and hecho("tipo_contrato") and hecho("medio_consiguio_empleo") and ver("minutos_desplazamiento"):
+        if hecho("lugar_trabajo") and hecho("medio_consiguio_empleo") and ver("minutos_desplazamiento"):
             pregunta("¿Cuántos minutos estarías dispuesto(a) a tardar en llegar al trabajo?", "Solo ida, entre 0 y 300. Si quieres trabajar desde tu vivienda, es 0.")
             st.selectbox("Minutos de desplazamiento", MINUTOS, index=None, placeholder="Selecciona o escribe los minutos",
                          format_func=lambda v: "No quiero desplazarme" if v == 0 else f"{v} min", key="m_min", label_visibility="collapsed")
@@ -2612,10 +2607,6 @@ def extraer_heuristico(texto, cat, sectores):
         d["lugar_trabajo"] = "En vivienda propia"
         d["minutos_desplazamiento"] = 0
         supuestos.update({"lugar_trabajo", "minutos_desplazamiento"})
-    m = re.search(r"contrato[^.\n]{0,25}(indefinid|termino fijo|a termino fijo|obra o labor)", t)
-    if m:
-        d["tipo_contrato"] = "Indefinido" if m.group(1) == "indefinid" else "Fijo"
-        supuestos.add("tipo_contrato")
     return d, supuestos
 
 
@@ -2637,7 +2628,7 @@ def extraer_con_ia(texto, cat, sectores):
         opciones = {
             "sexo": cat["sexo"], "estado_civil": cat["estado_civil"], "nivel_educativo": cat["nivel"], "asiste_institucion_educ": ["Sí", "No"],
             "area_titulo_campo_amplio": AREAS + [SIN_TITULO], "departamento": cat["departamento"], "zona": ["Cabecera", "Resto"],
-            "tipo_contrato": cat["contrato"], "lugar_trabajo": cat["lugar"], "sector_economico_seccion": sectores, "oficio_gran_grupo": cat["oficio"]}
+            "lugar_trabajo": cat["lugar"], "sector_economico_seccion": sectores, "oficio_gran_grupo": cat["oficio"]}
         instrucciones = (
             "Eres un extractor de datos de hojas de vida colombianas. Devuelve SOLO un objeto JSON. Incluye una clave únicamente si la hoja de vida "
             "permite deducirla con seguridad; si no, omítela (no inventes). Claves: edad (entero 15-85; si hay fecha de nacimiento calcúlala con la fecha de hoy "
@@ -2662,7 +2653,7 @@ def validar_extraccion(datos, cat, sectores):
     """Deja solo valores que existen en las listas de la encuesta (nada fuera de catálogo)."""
     opciones = {"sexo": cat["sexo"], "estado_civil": cat["estado_civil"], "nivel_educativo": cat["nivel"], "asiste_institucion_educ": ["Sí", "No"],
                 "area_titulo_campo_amplio": AREAS + [SIN_TITULO], "departamento": cat["departamento"], "zona": ["Cabecera", "Resto"],
-                "tipo_contrato": cat["contrato"], "lugar_trabajo": cat["lugar"], "sector_economico_seccion": sectores, "oficio_gran_grupo": cat["oficio"]}
+                "lugar_trabajo": cat["lugar"], "sector_economico_seccion": sectores, "oficio_gran_grupo": cat["oficio"]}
     limpio = {}
     for c, v in datos.items():
         if c == "edad" and isinstance(v, (int, float)) and 15 <= int(v) <= 85:
